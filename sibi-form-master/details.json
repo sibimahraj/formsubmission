@@ -1,0 +1,28 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "sibimahraj",
+      "department": "front end",
+      "company": "TCS"
+    },
+    {
+      "id": "2",
+      "name": "kiruba",
+      "department": "CAD",
+      "company": "DandD"
+    },
+    {
+      "id": "3",
+      "name": "vikram",
+      "department": "Black Squad",
+      "company": "Private Cops"
+    },
+    {
+      "id": "4",
+      "name": "veera",
+      "department": "Full stack",
+      "company": "CTS"
+    }
+  ]
+}
