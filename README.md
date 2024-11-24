@@ -835,3 +835,182 @@ describe("SelectionBox Component", () => {
   });
 });
 
+import React from "react";
+import { render, fireEvent, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import SelectionBox from "./selection-box";
+import * as reactRedux from "react-redux";
+import { fieldErrorAction } from "../../../utils/store/field-error-slice";
+import { ValueUpdateAction } from "../../../utils/store/value-update-slice";
+import { stagesAction } from "../../../utils/store/stages-slice";
+import { taxAction } from "../../../utils/store/tax-slice";
+import "@testing-library/jest-dom";
+import * as utils from "../../../utils/common/change.utils";
+import errorMsg from "../../../assets_json/error.json";
+
+// Create a mock Redux store
+const mockStore = configureStore([]);
+const initialState = {
+  lov: { lov: [] },
+  fielderror: { error: {} },
+  stages: {
+    stages: [{ stageInfo: { products: [{ product_type: "153" }], applicants: {} } }],
+    userInput: { applicants: {} },
+    myinfoResponse: {},
+    dependencyFields: [],
+  },
+};
+
+// Mock all external utility functions
+jest.mock("../../../utils/common/change.utils", () => ({
+  fieldError: jest.fn(),
+  isFieldUpdate: jest.fn(),
+  isMyinfoField: jest.fn(),
+  fieldIdAppend: jest.fn(),
+  getUrl: jest.fn(),
+}));
+
+// Mock imported actions
+jest.mock("../../../utils/store/field-error-slice", () => ({
+  fieldErrorAction: jest.fn(),
+}));
+
+jest.mock("../../../utils/store/value-update-slice", () => ({
+  ValueUpdateAction: jest.fn(),
+}));
+
+jest.mock("../../../utils/store/stages-slice", () => ({
+  stagesAction: {
+    removeAddToggleField: jest.fn(),
+  },
+}));
+
+jest.mock("../../../utils/store/tax-slice", () => ({
+  taxAction: jest.fn(),
+}));
+
+describe("SelectionBox Component", () => {
+  let store;
+
+  const mockProps = {
+    data: {
+      logical_field_name: "purpose_of_account",
+      rwb_label_name: "Purpose of Account",
+      editable: false,
+      handleCallback: jest.fn(),
+    },
+  };
+
+  beforeEach(() => {
+    store = mockStore(initialState);
+    jest.clearAllMocks();
+  });
+
+  it("renders the component without crashing", () => {
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    expect(screen.getByText("Purpose of Account")).toBeInTheDocument();
+  });
+
+  it("invokes `getUrl` utility when the dropdown opens", () => {
+    utils.getUrl.mockReturnValue("mock-url");
+
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    fireEvent.click(screen.getByText("Purpose of Account"));
+    expect(utils.getUrl).toHaveBeenCalled();
+  });
+
+  it("dispatches `fieldErrorAction` when an error occurs", () => {
+    const updatedState = {
+      ...initialState,
+      fielderror: {
+        error: { [`${mockProps.data.logical_field_name}_a_1`]: true },
+      },
+    };
+    store = mockStore(updatedState);
+
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    expect(fieldErrorAction).toHaveBeenCalled();
+    expect(screen.getByText(errorMsg["purpose_of_account"])).toBeInTheDocument();
+  });
+
+  it("dispatches `ValueUpdateAction` when a value is selected", () => {
+    const updatedState = {
+      ...initialState,
+      lov: {
+        lov: [
+          {
+            label: "purpose_of_account",
+            value: [{ CODE_VALUE: "SB", CODE_DESC: "Savings" }],
+          },
+        ],
+      },
+    };
+    store = mockStore(updatedState);
+
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    // Open dropdown
+    fireEvent.click(screen.getByText("Purpose of Account"));
+    fireEvent.click(screen.getByText("Savings"));
+
+    expect(ValueUpdateAction).toHaveBeenCalledWith(
+      mockProps.data,
+      "SB",
+      expect.anything()
+    );
+  });
+
+  it("calls `fieldIdAppend` utility on specific field interactions", () => {
+    utils.fieldIdAppend.mockReturnValue("mock-field-id");
+
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    fireEvent.click(screen.getByText("Purpose of Account"));
+    expect(utils.fieldIdAppend).toHaveBeenCalledWith(
+      mockProps.data.logical_field_name,
+      1 // Assuming the applicant number is 1
+    );
+  });
+
+  it("handles the delete action for tax fields correctly", () => {
+    const updatedProps = {
+      ...mockProps,
+      data: { logical_field_name: "country_of_tax_residence_1" },
+    };
+
+    render(
+      <Provider store={store}>
+        <SelectionBox {...updatedProps} />
+      </Provider>
+    );
+
+    // Simulate delete button click
+    fireEvent.click(screen.getByText("Delete"));
+    expect(taxAction).toHaveBeenCalled();
+  });
+});
+
