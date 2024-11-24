@@ -653,3 +653,185 @@ describe("SelectionBox Component", () => {
   });
 });
 
+
+import React from "react";
+import { render, fireEvent, screen, act } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import SelectionBox from "./selection-box"; // Update this path if necessary
+import { fieldErrorAction } from "../../../utils/store/field-error-slice";
+import { ValueUpdateAction } from "../../../utils/store/value-update-slice";
+import { stagesAction } from "../../../utils/store/stages-slice";
+import { taxAction } from "../../../utils/store/tax-slice";
+import "@testing-library/jest-dom";
+import { fieldError, isFieldUpdate, isMyinfoField, fieldIdAppend, getUrl } from "../../../utils/common/change.utils";
+import errorMsg from "../../../assets_json/error.json";
+
+const mockStore = configureStore([]);
+const initialState = {
+  lov: { lov: [] },
+  fielderror: { error: {} },
+  stages: {
+    stages: [{ stageInfo: { products: [{ product_type: "153" }], applicants: {} } }],
+    userInput: { applicants: {} },
+    myinfoResponse: {},
+    dependencyFields: [],
+  },
+};
+
+const mockProps = {
+  data: {
+    logical_field_name: "purpose_of_account",
+    rwb_label_name: "Purpose of Account",
+    editable: false,
+    handleCallback: jest.fn(),
+  },
+};
+
+describe("SelectionBox Component", () => {
+  let store;
+
+  beforeEach(() => {
+    store = mockStore(initialState);
+    jest.clearAllMocks();
+  });
+
+  it("renders the component without crashing", () => {
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    expect(screen.getByText("Purpose of Account")).toBeInTheDocument();
+  });
+
+  it("displays the placeholder text correctly", () => {
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    expect(
+      screen.getByPlaceholderText("Select the purpose of the account")
+    ).toBeInTheDocument();
+  });
+
+  it("handles dropdown opening and closing", () => {
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    const dropdownField = screen.getByText("Purpose of Account");
+    fireEvent.click(dropdownField);
+    expect(screen.getByPlaceholderText("Search")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Purpose of Account")); // Close dropdown
+    expect(screen.queryByPlaceholderText("Search")).not.toBeInTheDocument();
+  });
+
+  it("selects and deselects an option", () => {
+    const updatedState = {
+      ...initialState,
+      lov: {
+        lov: [
+          {
+            label: "purpose_of_account",
+            value: [{ CODE_VALUE: "SB", CODE_DESC: "Savings" }],
+          },
+        ],
+      },
+    };
+    store = mockStore(updatedState);
+
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    // Open dropdown
+    fireEvent.click(screen.getByText("Purpose of Account"));
+    expect(screen.getByText("Savings")).toBeInTheDocument();
+
+    // Select an option
+    fireEvent.click(screen.getByLabelText("Savings"));
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(
+      mockProps.data,
+      "SB"
+    );
+
+    // Deselect the option
+    fireEvent.click(screen.getByText("Savings").nextSibling); // Close icon
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "");
+  });
+
+  it("handles errors and displays error messages", () => {
+    const updatedState = {
+      ...initialState,
+      fielderror: {
+        error: { [`${mockProps.data.logical_field_name}_a_1`]: true },
+      },
+    };
+    store = mockStore(updatedState);
+
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    // Ensure error message is displayed
+    expect(screen.getByText(errorMsg["purpose_of_account"])).toBeInTheDocument();
+  });
+
+  it("handles special cases like `loan_tenor`", () => {
+    const updatedProps = {
+      ...mockProps,
+      data: { logical_field_name: "loan_tenor", rwb_label_name: "Loan Tenor" },
+    };
+    const updatedState = {
+      ...initialState,
+      stages: {
+        ...initialState.stages,
+        userInput: { applicants: { loan_tenor_a_1: "12 Months" } },
+      },
+    };
+    store = mockStore(updatedState);
+
+    render(
+      <Provider store={store}>
+        <SelectionBox {...updatedProps} />
+      </Provider>
+    );
+
+    // Pre-selected value
+    expect(screen.getByText("12 Months")).toBeInTheDocument();
+  });
+
+  it("handles delete action for tax fields", () => {
+    const updatedProps = {
+      ...mockProps,
+      data: { logical_field_name: "country_of_tax_residence_1" },
+    };
+
+    render(
+      <Provider store={store}>
+        <SelectionBox {...updatedProps} />
+      </Provider>
+    );
+
+    // Simulate delete button click
+    fireEvent.click(screen.getByText("Delete"));
+    const actions = store.getActions();
+    expect(actions).toContainEqual(
+      expect.objectContaining({
+        type: stagesAction.removeAddToggleField.type,
+      })
+    );
+  });
+});
+
