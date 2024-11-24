@@ -483,3 +483,173 @@ const SelectionBox = (props: KeyWithAnyModel) => {
 };
 
 export default SelectionBox;
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import SelectionBox from "./selection-box";
+import { StoreModel } from "../../../utils/model/common-model";
+
+// Mock Redux store
+const mockStore = configureStore([]);
+
+describe("SelectionBox Component", () => {
+  let store: any;
+  let mockProps: any;
+
+  beforeEach(() => {
+    store = mockStore({
+      lov: {
+        lov: [
+          {
+            label: "example_field",
+            value: [
+              { CODE_DESC: "Option 1", CODE_VALUE: "1", checked: false },
+              { CODE_DESC: "Option 2", CODE_VALUE: "2", checked: false },
+            ],
+          },
+        ],
+      },
+      fielderror: { error: [] },
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              applicants: {
+                example_field_a_1: "1",
+              },
+              products: [{ product_type: "153" }],
+            },
+          },
+        ],
+        userInput: {
+          applicants: {
+            example_field_a_1: "1",
+          },
+        },
+        myinfoResponse: {},
+        dependencyFields: [],
+      },
+    });
+
+    mockProps = {
+      data: {
+        logical_field_name: "example_field",
+        rwb_label_name: "Example Field",
+        editable: false,
+      },
+      handleCallback: jest.fn(),
+    };
+  });
+
+  it("renders without crashing", () => {
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    expect(screen.getByLabelText("Example Field")).toBeInTheDocument();
+  });
+
+  it("displays options from the LOV selector", () => {
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    // Trigger dropdown
+    fireEvent.click(screen.getByText("Example Field"));
+    expect(screen.getByText("Option 1")).toBeInTheDocument();
+    expect(screen.getByText("Option 2")).toBeInTheDocument();
+  });
+
+  it("handles selection of an option", () => {
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    // Trigger dropdown and select an option
+    fireEvent.click(screen.getByText("Example Field"));
+    const option1 = screen.getByLabelText("Option 1");
+    fireEvent.click(option1);
+
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(
+      mockProps.data,
+      "1"
+    );
+    expect(option1).toBeChecked();
+  });
+
+  it("removes selected values when clicking the close button", () => {
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    // Select an option
+    fireEvent.click(screen.getByText("Example Field"));
+    fireEvent.click(screen.getByLabelText("Option 1"));
+
+    // Remove selected value
+    const closeButton = screen.getByClassName("multi-close");
+    fireEvent.click(closeButton);
+
+    expect(screen.queryByText("Option 1")).not.toBeInTheDocument();
+  });
+
+  it("handles search input correctly", () => {
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    // Trigger dropdown
+    fireEvent.click(screen.getByText("Example Field"));
+
+    // Search for an option
+    const searchInput = screen.getByPlaceholderText("Search");
+    fireEvent.change(searchInput, { target: { value: "Option 1" } });
+
+    expect(screen.getByText("Option 1")).toBeInTheDocument();
+    expect(screen.queryByText("Option 2")).not.toBeInTheDocument();
+  });
+
+  it("displays an error message if no value is selected", () => {
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    // Submit without selecting an option
+    fireEvent.blur(screen.getByPlaceholderText("Select the purpose of the account"));
+    expect(screen.getByText("Please select Example Field")).toBeInTheDocument();
+  });
+
+  it("removes tax fields if delete button is clicked", () => {
+    mockProps.data.logical_field_name = "country_of_tax_residence";
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    const deleteButton = screen.getByText("Delete");
+    fireEvent.click(deleteButton);
+
+    // Verify appropriate Redux actions are dispatched
+    const actions = store.getActions();
+    expect(actions).toContainEqual(
+      expect.objectContaining({
+        type: "tax/removeTaxField",
+        payload: "country_of_tax_residence",
+      })
+    );
+  });
+});
+
