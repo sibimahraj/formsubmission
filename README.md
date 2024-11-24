@@ -1014,3 +1014,74 @@ describe("SelectionBox Component", () => {
   });
 });
 
+import React from "react";
+import { render, fireEvent, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import thunk from "redux-thunk";
+import SelectionBox from "src/shared/components/selection-box/selection-box";
+import { isFieldUpdate } from "path/to/actions"; // Update with actual path
+
+jest.mock("path/to/actions", () => ({
+  isFieldUpdate: jest.fn(),
+}));
+
+const mockStore = configureStore([thunk]);
+
+describe("SelectionBox Component", () => {
+  let store;
+
+  beforeEach(() => {
+    // Initialize mock Redux store with any necessary initial state
+    store = mockStore({
+      yourReducer: {
+        // Add initial state structure your component relies on
+        someField: "initial value",
+      },
+    });
+
+    // Clear mock calls before each test
+    jest.clearAllMocks();
+  });
+
+  it("dispatches field update action when the delete button is clicked", () => {
+    const mockProps = {
+      data: {
+        logical_field_name: "ownership_status",
+      },
+    };
+
+    // Mock the action to return a valid plain Redux action
+    isFieldUpdate.mockImplementation((field, value, logicalFieldName) => ({
+      type: "FIELD_UPDATE",
+      payload: { field, value, logicalFieldName },
+    }));
+
+    render(
+      <Provider store={store}>
+        <SelectionBox {...mockProps} />
+      </Provider>
+    );
+
+    const deleteButton = screen.getByText("Delete"); // Replace "Delete" with the actual button text
+    fireEvent.click(deleteButton);
+
+    // Verify the mock action creator was called
+    expect(isFieldUpdate).toHaveBeenCalledWith(
+      "ownership_status", // Replace with actual field
+      "expected_value",   // Replace with expected value
+      "ownership_status"  // Replace with logical field name
+    );
+
+    // Verify that the action was dispatched
+    const actions = store.getActions();
+    expect(actions).toContainEqual({
+      type: "FIELD_UPDATE",
+      payload: {
+        field: "ownership_status",
+        value: "expected_value",
+        logicalFieldName: "ownership_status",
+      },
+    });
+  });
+});
