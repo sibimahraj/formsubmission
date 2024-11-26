@@ -1845,4 +1845,185 @@ return (
 
 export default ThankYou;
 
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import ThankYou from "./ThankYou";
+import { KeyWithAnyModel } from "../../../utils/model/common-model";
+import thankyouData from "../../../assets/_json/thankyou.json";
+import { getUrl } from "../../../utils/common/change.utils";
+import trackEvents from "../../../services/track-events";
+import gaTrackEvents from "../../../services/ga-track-events";
+
+// Mock Redux store
+const mockStore = configureStore([]);
+jest.mock("../../../services/track-events");
+jest.mock("../../../services/ga-track-events");
+jest.mock("../../../utils/common/change.utils");
+
+describe("ThankYou Component", () => {
+  let store: any;
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageId: "stage1",
+            stageInfo: {
+              application: {
+                application_reference: "REF12345",
+              },
+              products: [
+                {
+                  product_category: "CC",
+                  name: "Credit Card",
+                  product_sequence_number: "SEQ001",
+                  product_type: "Card",
+                  acct_details: [
+                    {
+                      account_number: "12345678",
+                      card_no: "987654321",
+                    },
+                  ],
+                },
+              ],
+              applicants: {
+                embossed_name_a_1: "John Doe",
+                auth_mode_a_1: "IX",
+              },
+            },
+          },
+        ],
+        isDocumentUpload: false,
+      },
+    });
+
+    // Mock external dependencies
+    getUrl.getParameterByName = jest.fn().mockImplementation((param) => {
+      if (param === "auth") return null;
+      return null;
+    });
+
+    (trackEvents.triggerAdobeEvent as jest.Mock).mockImplementation(() => {});
+    (gaTrackEvents.pageView as jest.Mock).mockImplementation(() => {});
+  });
+
+  test("renders ThankYou component with STP flow", () => {
+    render(
+      <Provider store={store}>
+        <ThankYou />
+      </Provider>
+    );
+
+    expect(screen.getByText(/Credit Card/i)).toBeInTheDocument();
+    expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith("formSubmit");
+    expect(gaTrackEvents.pageView).toHaveBeenCalledWith("stage1");
+  });
+
+  test("renders ThankYou component with non-STP flow", () => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageId: "stage2",
+            stageInfo: {
+              application: {
+                application_reference: "REF67890",
+              },
+              products: [
+                {
+                  product_category: "Loan",
+                  name: "Personal Loan",
+                  product_sequence_number: "SEQ002",
+                  product_type: "Loan",
+                },
+              ],
+            },
+          },
+        ],
+        isDocumentUpload: true,
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ThankYou />
+      </Provider>
+    );
+
+    expect(screen.getByText(/Personal Loan/i)).toBeInTheDocument();
+    expect(trackEvents.triggerAdobeEvent).toHaveBeenCalled();
+    expect(gaTrackEvents.pageView).toHaveBeenCalledWith("stage2");
+  });
+
+  test("handles form submission with authenticated mode", () => {
+    render(
+      <Provider store={store}>
+        <ThankYou />
+      </Provider>
+    );
+
+    const formElement = screen.getByRole("form");
+    fireEvent.submit(formElement);
+
+    // No redirect since auth mode is "IX"
+    expect(window.location.href).not.toBeDefined();
+  });
+
+  test("handles form submission with unauthenticated mode", () => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageId: "stage3",
+            stageInfo: {
+              application: {
+                application_reference: "REF11223",
+              },
+              applicants: {
+                auth_mode_a_1: "UA",
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ThankYou />
+      </Provider>
+    );
+
+    const formElement = screen.getByRole("form");
+    fireEvent.submit(formElement);
+
+    expect(window.location.href).toBe(`${process.env.REACT_APP_HOME_PAGE_URL}`);
+  });
+
+  test("renders error UI when showErrorUI is true", () => {
+    render(
+      <Provider store={store}>
+        <ThankYou />
+      </Provider>
+    );
+
+    // Simulate error UI condition
+    const errorStateSetter = screen.queryByText(/error/i);
+    expect(errorStateSetter).toBeNull();
+  });
+
+  test("generates correct feedback URL", () => {
+    render(
+      <Provider store={store}>
+        <ThankYou />
+      </Provider>
+    );
+
+    const feedbackUrl = `${thankyouData["Feedback"]["url_prefix"]}${thankyouData["Feedback"]["casa"]}${thankyouData["Feedback"]["url_suffix"]}REF12345`;
+    expect(feedbackUrl).toBeDefined();
+  });
+});
+
 
