@@ -2401,5 +2401,160 @@ describe("ThankYou Component Testing", () => {
     // Add assertions to
     })
 
+import { render, cleanup } from "@testing-library/react";
+import { useDispatch, useSelector } from "react-redux";
+import ThankYou from "./thank-you";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+
+jest.mock("axios", () => ({ __esModule: true }));
+jest.mock("@lottiefiles/react-lottie-player", () => ({ __esModule: true }));
+
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+jest.mock("react-router-dom", () => ({
+  useNavigate: jest.fn(),
+  useLocation: jest.fn(),
+}));
+
+beforeEach(() => {
+  global.scrollTo = jest.fn();
+  jest.clearAllMocks();
+});
+
+afterEach(() => {
+  cleanup();
+  jest.resetAllMocks();
+  jest.clearAllMocks();
+});
+
+describe("ThankYou Component Testing", () => {
+  let mockDispatch: jest.Mock;
+  let mockNavigate: jest.Mock;
+
+  beforeEach(() => {
+    mockDispatch = jest.fn();
+    mockNavigate = jest.fn();
+
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    (useNavigate as jest.Mock).mockReturnValue(mockNavigate);
+
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return [
+          {
+            stageId: "stage-1",
+            stageInfo: {
+              application: { application_reference: "12345" },
+              products: [
+                {
+                  product_category: "CC",
+                  name: "Credit Card",
+                  product_sequence_number: "001",
+                  acct_details: [{ account_number: "12345678", card_no: "87654321" }],
+                  product_type: "Type A",
+                },
+              ],
+              applicants: { embossed_name_a_1: "John Doe" },
+            },
+          },
+        ];
+      }
+      if (selectorFn.toString().includes("state.stages.otpSuccess")) return false;
+      if (selectorFn.toString().includes("state.stages.isDocumentUpload")) return false;
+      return undefined;
+    });
+
+    jest.spyOn(React, "useState")
+      .mockImplementationOnce(() => [false, jest.fn()])
+      .mockImplementationOnce(() => [
+        {
+          productCategory: "CC",
+          productName: "Credit Card",
+          account_number: "12345678",
+          card_no: "87654321",
+        },
+        jest.fn(),
+      ]);
+  });
+
+  it("should render ThankYou component successfully", () => {
+    render(<ThankYou />);
+    // Assertions can be added to verify specific elements in ThankYou
+  });
+
+  it("should dispatch and navigate on success", async () => {
+    const mockResponse = { data: "mockResponseData" };
+    mockDispatch.mockImplementation((action) => {
+      if (typeof action === "function") {
+        return Promise.resolve(mockResponse);
+      }
+      return action;
+    });
+
+    render(<ThankYou />);
+    expect(mockDispatch).toHaveBeenCalledWith(expect.any(Function));
+    await Promise.resolve();
+    expect(mockNavigate).toHaveBeenCalledWith("/some-path"); // Update with actual path
+  });
+
+  it("should handle different product categories", () => {
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return [
+          {
+            stageId: "stage-1",
+            stageInfo: {
+              products: [
+                {
+                  product_category: "PL",
+                  name: "Personal Loan",
+                  acct_details: [{ account_number: "87654321" }],
+                  offer_details: [{ fees: [{ fee_amount: "100" }] }],
+                },
+              ],
+            },
+          },
+        ];
+      }
+      return undefined;
+    });
+
+    render(<ThankYou />);
+    // Add assertions to validate rendering of new product categories
+  });
+
+  it("should handle missing stages gracefully", () => {
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return [];
+      }
+      return undefined;
+    });
+
+    render(<ThankYou />);
+    // Add assertions to verify behavior with no stages
+  });
+
+  it("should update application details correctly in useEffect", () => {
+    render(<ThankYou />);
+    // Mock application details and verify expected behavior
+  });
+
+  it("should handle error scenarios gracefully", () => {
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return [{ stageId: "stage-1", stageInfo: { products: [] } }];
+      }
+      return undefined;
+    });
+
+    render(<ThankYou />);
+    // Add assertions to validate error handling
+  });
+});
 
 
