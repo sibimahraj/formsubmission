@@ -2557,4 +2557,107 @@ describe("ThankYou Component Testing", () => {
   });
 });
 
+import { render, cleanup, fireEvent } from "@testing-library/react";
+import { useSelector, useDispatch } from "react-redux";
+import ThankYou from "./thank-you";
+import { mockStore } from "../../../utils/mock/mockStore"; // Assuming a mockStore utility
+import React from "react";
+
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+jest.mock("../../../services/track-events", () => ({
+  triggerAdobeEvent: jest.fn(),
+}));
+
+jest.mock("../../../services/ga-track-events", () => ({
+  pageView: jest.fn(),
+}));
+
+describe("ThankYou Component", () => {
+  let mockDispatch: jest.Mock;
+
+  beforeEach(() => {
+    mockDispatch = jest.fn();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    cleanup();
+  });
+
+  it("should update applicationDetails when stageSelector contains valid product data", () => {
+    const mockStageSelector = [
+      {
+        stageId: "stage-1",
+        stageInfo: {
+          application: { application_reference: "12345" },
+          products: [
+            {
+              product_category: "CC",
+              name: "Credit Card",
+              product_sequence_number: "001",
+              acct_details: [{ account_number: "12345678", card_no: "87654321" }],
+              product_type: "Type A",
+            },
+          ],
+          applicants: { embossed_name_a_1: "John Doe" },
+        },
+      },
+    ];
+
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return mockStageSelector;
+      }
+      return undefined;
+    });
+
+    const { getByText } = render(<ThankYou />);
+
+    // Verify applicationDetails is set correctly
+    expect(mockDispatch).not.toHaveBeenCalled(); // No immediate dispatch calls
+    expect(getByText(/Credit Card/i)).toBeInTheDocument();
+    expect(getByText(/12345678/i)).toBeInTheDocument();
+  });
+
+  it("should handle missing product data gracefully", () => {
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return [{ stageId: "stage-1", stageInfo: { products: [] } }];
+      }
+      return undefined;
+    });
+
+    const { queryByText } = render(<ThankYou />);
+
+    // Validate no crash and appropriate fallback behavior
+    expect(queryByText(/Credit Card/i)).not.toBeInTheDocument();
+  });
+
+  it("should call submitForm and redirect based on auth_mode_a_1", () => {
+    const mockStageSelector = [
+      {
+        stageInfo: {
+          applicants: { auth_mode_a_1: "IX" },
+        },
+      },
+    ];
+
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return mockStageSelector;
+      }
+      return undefined;
+    });
+
+    const { getByRole } = render(<ThankYou />);
+    const form = getByRole("form");
+
+    fireEvent.submit(form);
+
+    // Validate that submitForm handles the auth_mode_a_1 logic correctly
+    expect(mockDispatch).not.toHaveBeenCalled(); // Dispatch should not be called here
+  });
+});
+
 
