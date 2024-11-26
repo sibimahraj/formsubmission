@@ -2660,4 +2660,59 @@ describe("ThankYou Component", () => {
   });
 });
 
+import React from "react";
+import { render, fireEvent } from "@testing-library/react";
+import { useSelector } from "react-redux";
+import ThankYou from "./thank-you";
 
+jest.mock("react-redux", () => ({
+  useSelector: jest.fn(),
+  useDispatch: jest.fn(),
+}));
+
+describe("ThankYou Component", () => {
+  beforeEach(() => {
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return [
+          {
+            stageInfo: {
+              application: { application_reference: "12345" },
+              applicants: { auth_mode_a_1: "IX" },
+              products: [
+                {
+                  product_category: "CC",
+                  name: "Credit Card",
+                  acct_details: [{ account_number: "12345678", card_no: "87654321" }],
+                },
+              ],
+            },
+            stageId: "stage_1",
+          },
+        ];
+      }
+      return [];
+    });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should render ThankYou component without crashing", () => {
+    const { getByText } = render(<ThankYou />);
+    expect(getByText(/thankyou/i)).toBeInTheDocument();
+  });
+
+  it("should call submitForm and handle redirect for non-IX/IM auth_mode", () => {
+    delete window.location;
+    window.location = { href: "" } as any;
+
+    const { getByRole } = render(<ThankYou />);
+    const form = getByRole("form");
+
+    fireEvent.submit(form);
+
+    expect(window.location.href).toBe(`${process.env.REACT_APP_HOME_PAGE_URL}`);
+  });
+});
