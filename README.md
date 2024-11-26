@@ -1288,3 +1288,151 @@ export const Date = (props: KeyWithAnyModel) => {
 
 export default Date;
 
+
+import React from "react";
+import { render, fireEvent, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import Date from "./Date";
+import validateService from "../../../services/validation-service";
+import { lastAction } from "../../../utils/store/last-accessed-slice";
+
+// Mock the dependencies
+jest.mock("../../../services/validation-service", () => ({
+  isValidDate: jest.fn(),
+  calculateAge: jest.fn(),
+  validateAge: jest.fn(),
+  getValidationMsg: jest.fn(),
+  allowOnlyCharacter: jest.fn(),
+}));
+
+jest.mock("../../../utils/store/last-accessed-slice", () => ({
+  getField: jest.fn(),
+}));
+
+describe("Date Component", () => {
+  const mockStore = configureStore([]);
+  let store;
+
+  const props = {
+    data: {
+      logical_field_name: "testDate",
+      rwb_label_name: "Date of Birth",
+      mandatory: "Yes",
+      editable: false,
+      handleCallback: jest.fn(),
+    },
+  };
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: { stages: [{ stageInfo: { products: [{ product_type: "type1", product_category: "category1" }], applicants: { testDate_a_1: "2000-01-01" } } }] },
+      fielderror: { error: {} },
+    });
+  });
+
+  test("renders Date component and populates fields from store", () => {
+    render(
+      <Provider store={store}>
+        <Date {...props} />
+      </Provider>
+    );
+
+    expect(screen.getByPlaceholderText("DD").value).toBe("01");
+    expect(screen.getByPlaceholderText("MM").value).toBe("01");
+    expect(screen.getByPlaceholderText("YYYY").value).toBe("2000");
+  });
+
+  test("calls handleCallback on valid date input", () => {
+    validateService.isValidDate.mockReturnValue(true);
+    validateService.calculateAge.mockReturnValue(25);
+    validateService.validateAge.mockReturnValue(false);
+
+    render(
+      <Provider store={store}>
+        <Date {...props} />
+      </Provider>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("DD"), { target: { value: "15" } });
+    fireEvent.change(screen.getByPlaceholderText("MM"), { target: { value: "08" } });
+    fireEvent.change(screen.getByPlaceholderText("YYYY"), { target: { value: "1998" } });
+
+    expect(props.data.handleCallback).toHaveBeenCalledWith(
+      props.data,
+      "1998-08-15"
+    );
+  });
+
+  test("shows error for invalid date", () => {
+    validateService.isValidDate.mockReturnValue(false);
+
+    render(
+      <Provider store={store}>
+        <Date {...props} />
+      </Provider>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("YYYY"), { target: { value: "202" } });
+
+    expect(screen.getByText(/Date of Birth/)).toBeInTheDocument();
+  });
+
+  test("shows error for invalid age", () => {
+    validateService.isValidDate.mockReturnValue(true);
+    validateService.calculateAge.mockReturnValue(5);
+    validateService.validateAge.mockReturnValue(true);
+    validateService.getValidationMsg.mockReturnValue("is not valid");
+
+    render(
+      <Provider store={store}>
+        <Date {...props} />
+      </Provider>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("YYYY"), { target: { value: "2018" } });
+
+    expect(screen.getByText(/Date of Birth is not valid/)).toBeInTheDocument();
+  });
+
+  test("calls allowOnlyCharacter on key press", () => {
+    render(
+      <Provider store={store}>
+        <Date {...props} />
+      </Provider>
+    );
+
+    fireEvent.keyPress(screen.getByPlaceholderText("DD"), { key: "a", code: "KeyA" });
+
+    expect(validateService.allowOnlyCharacter).toHaveBeenCalled();
+  });
+
+  test("calls getField on focus", () => {
+    render(
+      <Provider store={store}>
+        <Date {...props} />
+      </Provider>
+    );
+
+    fireEvent.focus(screen.getByPlaceholderText("YYYY"));
+
+    expect(lastAction.getField).toHaveBeenCalledWith("testDate");
+  });
+
+  test("handles zero-padded input for day and month", () => {
+    render(
+      <Provider store={store}>
+        <Date {...props} />
+      </Provider>
+    );
+
+    fireEvent.blur(screen.getByPlaceholderText("DD"), { target: { value: "7" } });
+
+    expect(screen.getByPlaceholderText("DD").value).toBe("07");
+
+    fireEvent.blur(screen.getByPlaceholderText("MM"), { target: { value: "8" } });
+
+    expect(screen.getByPlaceholderText("MM").value).toBe("08");
+  });
+});
+
