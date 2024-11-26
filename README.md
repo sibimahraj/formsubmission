@@ -2826,3 +2826,111 @@ describe("ThankYou Component (Shallow Rendering)", () => {
     expect(wrapper.find(".thankyou__container").exists()).toBe(false);
   });
 });
+
+
+import React from "react";
+import { shallow } from "enzyme";
+import { useSelector } from "react-redux";
+import ThankYou from "./thank-you";
+
+jest.mock("react-redux", () => ({
+  useSelector: jest.fn(),
+  useDispatch: jest.fn(),
+}));
+
+describe("ThankYou Component - Key Functionalities", () => {
+  let mockStageSelector: any;
+
+  beforeEach(() => {
+    mockStageSelector = [
+      {
+        stageInfo: {
+          application: { application_reference: "12345" },
+          applicants: { auth_mode_a_1: "IX" },
+          products: [
+            {
+              product_category: "CC",
+              name: "Credit Card",
+              acct_details: [{ account_number: "12345678", card_no: "87654321" }],
+              product_sequence_number: "001",
+              product_type: "Card",
+            },
+          ],
+        },
+        stageId: "stage_1",
+      },
+    ];
+
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return mockStageSelector;
+      }
+      return [];
+    });
+
+    delete window.location;
+    window.location = { href: "" } as any; // Mock location
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should set application details correctly in useEffect", () => {
+    const wrapper = shallow(<ThankYou />);
+
+    // Extract application details from state
+    const state = wrapper.find(ThankYou).prop("children").props.children.props;
+    const { applicationDetails } = state;
+
+    // Verify the populated details
+    expect(applicationDetails.productCategory).toEqual("CC");
+    expect(applicationDetails.productName).toEqual("Credit Card");
+    expect(applicationDetails.account_number).toEqual("12345678");
+    expect(applicationDetails.card_no).toEqual("87654321");
+    expect(applicationDetails.thankyouProp).toEqual("STP");
+    expect(applicationDetails.isStp).toBe(true);
+  });
+
+  it("should handle empty stageSelector gracefully", () => {
+    (useSelector as jest.Mock).mockReturnValue([]);
+
+    const wrapper = shallow(<ThankYou />);
+    const state = wrapper.find(ThankYou).prop("children").props.children.props;
+
+    expect(state.applicationDetails.productCategory).toEqual("");
+    expect(state.applicationDetails.productName).toEqual("");
+    expect(state.applicationDetails.isStp).toBe(false);
+  });
+
+  it("should call submitForm and redirect based on auth_mode_a_1", () => {
+    mockStageSelector[0].stageInfo.applicants.auth_mode_a_1 = "OTHER";
+
+    const wrapper = shallow(<ThankYou />);
+    const form = wrapper.find("form");
+
+    form.simulate("submit", { preventDefault: jest.fn() });
+
+    expect(window.location.href).toBe(`${process.env.REACT_APP_HOME_PAGE_URL}`);
+  });
+
+  it("should not redirect for auth_mode_a_1 = 'IX' or 'IM'", () => {
+    mockStageSelector[0].stageInfo.applicants.auth_mode_a_1 = "IX";
+
+    const wrapper = shallow(<ThankYou />);
+    const form = wrapper.find("form");
+
+    form.simulate("submit", { preventDefault: jest.fn() });
+
+    // Ensure no redirection
+    expect(window.location.href).toBe("");
+  });
+
+  it("should update thankyouFeedback URL correctly in useEffect", () => {
+    const wrapper = shallow(<ThankYou />);
+    const state = wrapper.find(ThankYou).prop("children").props.children.props;
+    const { applicationDetails } = state;
+
+    expect(applicationDetails.feedbackUrl).toContain("12345"); // Ensure application reference is included in URL
+  });
+});
