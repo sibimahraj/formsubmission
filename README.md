@@ -3472,3 +3472,16 @@ it("renders error component when showErrorUI is true and no application details"
 
   expect(screen.getByText("ThankYouError Mock")).toBeInTheDocument();
 });
+
+jest.mock("./thankyou-cc", () =>
+  jest.fn(({ submitForm }: { submitForm: () => void }) => (
+    <button onClick={submitForm}>Submit Form</button>
+  ))
+)
+
+
+jest.mock("./thankyou-cc", () =>
+  jest.fn(({ submitForm }: { submitForm: () => void }) => (
+    <button onClick={submitForm}>Submit Form</button>
+  ))
+);
