@@ -3253,4 +3253,137 @@ describe("ThankYou Component Tests", () => {
   });
 });
 
+import React from "react";
+import { render, screen, cleanup, act } from "@testing-library/react";
+import { useSelector } from "react-redux";
+import ThankYou from "./ThankYou";
+
+jest.mock("react-redux", () => ({
+  useSelector: jest.fn(),
+}));
+
+jest.mock("@lottiefiles/react-lottie-player", () => ({
+  __esModule: true,
+}));
+
+jest.mock("../../../services/ga-track-events", () => ({
+  default: {
+    pageView: jest.fn(),
+  },
+}));
+
+afterEach(() => {
+  jest.clearAllMocks();
+  cleanup();
+});
+
+describe("ThankYou Component Test Suite", () => {
+  let mockGATrackEvents: any;
+
+  beforeAll(() => {
+    mockGATrackEvents = require("../../../services/ga-track-events").default;
+  });
+
+  it("renders ThankYouCC for CC product category", async () => {
+    (useSelector as jest.Mock).mockImplementation(() => [
+      {
+        stageInfo: {
+          products: [
+            {
+              product_category: "CC",
+            },
+          ],
+        },
+      },
+    ]);
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    expect(screen.getByText("ThankYouCC Mock")).toBeInTheDocument();
+  });
+
+  it("handles non-CC product categories gracefully", async () => {
+    (useSelector as jest.Mock).mockImplementation(() => [
+      {
+        stageInfo: {
+          products: [
+            {
+              product_category: "NON_CC",
+            },
+          ],
+        },
+      },
+    ]);
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    expect(screen.queryByText("ThankYouCC Mock")).not.toBeInTheDocument();
+    expect(screen.queryByText("Fallback Component or Message")).toBeInTheDocument();
+  });
+
+  it("renders error component when showErrorUI is true", async () => {
+    jest.spyOn(React, "useState")
+      .mockImplementationOnce(() => [true, jest.fn()]) // Mock showErrorUI as true
+      .mockImplementationOnce(() => [null, jest.fn()]); // Mock applicationDetails as null
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    expect(screen.getByText("ThankYouError Mock")).toBeInTheDocument();
+  });
+
+  it("redirects to home page if stage info is missing", async () => {
+    window.location.href = "http://test.com";
+    (useSelector as jest.Mock).mockImplementationOnce(() => []);
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    expect(window.location.href).toBe(process.env.REACT_APP_HOME_PAGE_URL);
+  });
+
+  it("handles errors in submitForm gracefully", async () => {
+    const mockSubmitForm = jest.fn().mockImplementation(() => {
+      throw new Error("Form submission error");
+    });
+    jest.spyOn(React, "useRef").mockReturnValueOnce({
+      current: {
+        submit: mockSubmitForm,
+      },
+    });
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    const form = screen.getByRole("form");
+    act(() => {
+      fireEvent.submit(form);
+    });
+
+    expect(screen.getByText("ThankYouError Mock")).toBeInTheDocument();
+  });
+
+  it("handles unexpected input during tracking", async () => {
+    (useSelector as jest.Mock).mockImplementationOnce(() => [
+      {
+        stageInfo: {
+          applicants: null, // Missing expected data
+        },
+      },
+    ]);
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    expect(mockGATrackEvents.pageView).toHaveBeenCalledWith("unknown-stage");
+  });
+});
 
