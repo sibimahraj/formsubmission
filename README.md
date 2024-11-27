@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from RR"react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   KeyWithAnyModel,
@@ -3089,5 +3089,168 @@ return (
 };
 
 export default ThankYou;
+
+import { render, cleanup, screen, fireEvent } from "@testing-library/react";
+import { useDispatch, useSelector } from "react-redux";
+import { act } from "react-dom/test-utils";
+import ThankYou from "./thank-you";
+import { mockStoreData } from "../../../utils/mock/store-spec.json";
+import React from "react";
+
+jest.autoMockOff();
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+jest.mock("../../../services/track-events", () => ({
+  __esModule: true,
+  default: {
+    triggerAdobeEvent: jest.fn(),
+  },
+}));
+
+jest.mock("../../../services/ga-track-events", () => ({
+  __esModule: true,
+  default: {
+    pageView: jest.fn(),
+  },
+}));
+
+jest.mock("./thankyou-cc", () => jest.fn(() => <div>ThankYouCC Mock</div>));
+jest.mock("./thankyou-error", () => jest.fn(() => <div>ThankYouError Mock</div>));
+
+afterEach(() => {
+  jest.resetAllMocks();
+  cleanup();
+});
+
+describe("ThankYou Component Tests", () => {
+  let mockDispatch: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDispatch = jest.fn();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return [
+          {
+            stageId: "stage-1",
+            stageInfo: {
+              application: {
+                application_reference: "APP123",
+              },
+              products: [
+                {
+                  product_category: "CC",
+                  name: "Credit Card",
+                  product_sequence_number: "001",
+                  product_type: "CARD",
+                  acct_details: [
+                    {
+                      account_number: "ACC123",
+                      card_no: "CARD123",
+                    },
+                  ],
+                },
+              ],
+              applicants: {
+                embossed_name_a_1: "John Doe",
+                auth_mode_a_1: "IX",
+              },
+            },
+          },
+        ];
+      }
+      return null;
+    });
+  });
+
+  it("renders ThankYouCC component for product category CC", async () => {
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    expect(screen.getByText("ThankYouCC Mock")).toBeInTheDocument();
+  });
+
+  it("renders ThankYouError component when showErrorUI is true", async () => {
+    jest.spyOn(React, "useState")
+      .mockImplementationOnce(() => [true, jest.fn()]) // Mock showErrorUI as true
+      .mockImplementation(() => [jest.fn()]);
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    expect(screen.getByText("ThankYouError Mock")).toBeInTheDocument();
+  });
+
+  it("dispatches GA events and triggers tracking on load", async () => {
+    const mockTrackEvents = require("../../../services/track-events").default;
+    const mockGATrackEvents = require("../../../services/ga-track-events").default;
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    expect(mockGATrackEvents.pageView).toHaveBeenCalledWith("stage-1");
+    expect(mockTrackEvents.triggerAdobeEvent).toHaveBeenCalledWith("formSubmit");
+  });
+
+  it("sets application details in useEffect", async () => {
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    expect(screen.getByText("ThankYouCC Mock")).toBeInTheDocument();
+    // You can test specific application details here using useEffect logic
+  });
+
+  it("redirects to the home page on submitForm if auth_mode_a_1 is not IX or IM", async () => {
+    window.location.href = "http://test.com";
+    (useSelector as jest.Mock).mockImplementationOnce(() => [
+      {
+        stageInfo: {
+          applicants: {
+            auth_mode_a_1: "NON_IX_IM",
+          },
+        },
+      },
+    ]);
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    const form = screen.getByRole("form");
+    fireEvent.submit(form);
+
+    expect(window.location.href).toBe(process.env.REACT_APP_HOME_PAGE_URL);
+  });
+
+  it("does not redirect if auth_mode_a_1 is IX or IM", async () => {
+    (useSelector as jest.Mock).mockImplementationOnce(() => [
+      {
+        stageInfo: {
+          applicants: {
+            auth_mode_a_1: "IX",
+          },
+        },
+      },
+    ]);
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    const form = screen.getByRole("form");
+    fireEvent.submit(form);
+
+    expect(window.location.href).not.toBe(process.env.REACT_APP_HOME_PAGE_URL);
+  });
+});
 
 
