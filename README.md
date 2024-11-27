@@ -3387,3 +3387,88 @@ describe("ThankYou Component Test Suite", () => {
   });
 });
 
+it("handles non-CC product categories gracefully", async () => {
+  (useSelector as jest.Mock).mockImplementationOnce(() => [
+    {
+      stageInfo: {
+        products: [
+          {
+            product_category: "NON_CC",
+          },
+        ],
+      },
+    },
+  ]);
+
+  await act(async () => {
+    render(<ThankYou />);
+  });
+
+  // Ensure no CC-specific component is rendered
+  expect(screen.queryByText("ThankYouCC Mock")).not.toBeInTheDocument();
+  // Check if a fallback or other behavior is triggered
+  expect(screen.queryByText("Fallback Component or Message")).toBeInTheDocument();
+});
+
+it("redirects to home page if stage info is missing", async () => {
+  window.location.href = "http://test.com";
+  (useSelector as jest.Mock).mockImplementationOnce(() => []);
+
+  await act(async () => {
+    render(<ThankYou />);
+  });
+
+  expect(window.location.href).toBe(process.env.REACT_APP_HOME_PAGE_URL);
+});
+
+it("handles errors in submitForm gracefully", async () => {
+  const mockSubmitForm = jest.fn().mockImplementation(() => {
+    throw new Error("Form submission error");
+  });
+  jest.spyOn(React, "useRef").mockReturnValueOnce({
+    current: {
+      submit: mockSubmitForm,
+    },
+  });
+
+  await act(async () => {
+    render(<ThankYou />);
+  });
+
+  const form = screen.getByRole("form");
+  fireEvent.submit(form);
+
+  // Check if error handling UI or logging is triggered
+  expect(screen.getByText("ThankYouError Mock")).toBeInTheDocument();
+});
+
+
+it("handles unexpected input during tracking", async () => {
+  const mockGATrackEvents = require("../../../services/ga-track-events").default;
+  (useSelector as jest.Mock).mockImplementationOnce(() => [
+    {
+      stageInfo: {
+        applicants: null, // Missing expected data
+      },
+    },
+  ]);
+
+  await act(async () => {
+    render(<ThankYou />);
+  });
+
+  expect(mockGATrackEvents.pageView).toHaveBeenCalledWith("unknown-stage");
+});
+
+
+it("renders error component when showErrorUI is true and no application details", async () => {
+  jest.spyOn(React, "useState")
+    .mockImplementationOnce(() => [true, jest.fn()]) // Mock showErrorUI as true
+    .mockImplementationOnce(() => [null, jest.fn()]); // Mock applicationDetails as null
+
+  await act(async () => {
+    render(<ThankYou />);
+  });
+
+  expect(screen.getByText("ThankYouError Mock")).toBeInTheDocument();
+});
