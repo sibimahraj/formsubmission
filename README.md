@@ -3575,3 +3575,11 @@ describe("ThankYou Component Tests", () => {
     expect(mockSubmitForm).toHaveBeenCalledWith();
   });
 });
+
+
+jest.mock("./thankyou-cc", () => {
+  const mockSubmitForm = jest.fn();
+  return jest.fn(({ submitForm = mockSubmitForm }: { submitForm: jest.Mock }) => (
+    <button onClick={submitForm}>Submit Form</button>
+  ));
+});
