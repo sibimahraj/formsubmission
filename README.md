@@ -3485,3 +3485,93 @@ jest.mock("./thankyou-cc", () =>
     <button onClick={submitForm}>Submit Form</button>
   ))
 );
+
+
+describe("ThankYou Component Tests", () => {
+  let mockDispatch: jest.Mock;
+  let mockSubmitForm: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDispatch = jest.fn();
+    mockSubmitForm = jest.fn();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return [
+          {
+            stageId: "stage-1",
+            stageInfo: {
+              application: {
+                application_reference: "APP123",
+              },
+              products: [
+                {
+                  product_category: "CC",
+                  name: "Credit Card",
+                  product_sequence_number: "001",
+                  product_type: "CARD",
+                  acct_details: [
+                    {
+                      account_number: "ACC123",
+                      card_no: "CARD123",
+                    },
+                  ],
+                },
+              ],
+              applicants: {
+                embossed_name_a_1: "John Doe",
+                auth_mode_a_1: "IX",
+              },
+            },
+          },
+        ];
+      }
+      return null;
+    });
+  });
+
+  it("calls submitForm when the button in ThankYouCC is clicked", async () => {
+    // Mock the ThankYouCC component to use the mockSubmitForm
+    jest.mock("./thankyou-cc", () =>
+      jest.fn(({ submitForm }: { submitForm: () => void }) => (
+        <button onClick={submitForm}>Submit Form</button>
+      ))
+    );
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    // Simulate a button click inside ThankYouCC
+    const button = screen.getByText("Submit Form");
+    fireEvent.click(button);
+
+    // Assert that the submitForm function was called
+    expect(mockSubmitForm).toHaveBeenCalledTimes(1);
+  });
+
+  it("validates submitForm logic within ThankYouCC", async () => {
+    mockSubmitForm.mockImplementation(() => {
+      console.log("Submit form called!");
+    });
+
+    jest.mock("./thankyou-cc", () =>
+      jest.fn(({ submitForm }: { submitForm: () => void }) => (
+        <button onClick={submitForm}>Submit Form</button>
+      ))
+    );
+
+    await act(async () => {
+      render(<ThankYou />);
+    });
+
+    const button = screen.getByText("Submit Form");
+    fireEvent.click(button);
+
+    // Verify that the mocked implementation is called
+    expect(mockSubmitForm).toHaveBeenCalledTimes(1);
+    expect(mockSubmitForm).toHaveBeenCalledWith();
+  });
+});
