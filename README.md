@@ -4020,3 +4020,185 @@ const Toggle = (props: KeyWithAnyModel) => {
 
 export default Toggle;
 
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import Toggle from "./Toggle";
+import { isFieldUpdate } from "../../../utils/common/change.utils";
+import { aliasAction } from "../../../utils/store/alias-slice";
+import { fieldErrorAction } from "../../../utils/store/field-error-slice";
+import { stagesAction } from "../../../utils/store/stages-slice";
+import { lastAction } from "../../../utils/store/last-accessed-slice";
+
+// Mock the Redux actions
+jest.mock("../../../utils/common/change.utils", () => ({
+  isFieldUpdate: jest.fn(),
+}));
+jest.mock("../../../utils/store/alias-slice", () => ({
+  aliasAction: {
+    resetAliasField: jest.fn(),
+    addAliasField: jest.fn(),
+    updateCount: jest.fn(),
+  },
+}));
+jest.mock("../../../utils/store/field-error-slice", () => ({
+  fieldErrorAction: {
+    removeMandatoryFields: jest.fn(),
+    getMandatoryFields: jest.fn(),
+  },
+}));
+jest.mock("../../../utils/store/stages-slice", () => ({
+  stagesAction: {
+    removeAddToggleField: jest.fn(),
+  },
+}));
+jest.mock("../../../utils/store/last-accessed-slice", () => ({
+  lastAction: {
+    getField: jest.fn(),
+  },
+}));
+
+const mockStore = configureStore([]);
+
+describe("Toggle Component", () => {
+  let store;
+  const mockProps = {
+    data: {
+      logical_field_name: "other_name_or_alias",
+      rwb_label_name: "Test Label",
+      info_tooltips: "Yes",
+      details: "Tooltip Details",
+    },
+    handleCallback: jest.fn(),
+    handleFieldDispatch: jest.fn(),
+    value: "Test Value",
+  };
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: { stages: [{ stageInfo: { applicants: {} }, stageId: "stage-1" }], journeyType: "" },
+      alias: { fields: [], count: 0 },
+    });
+  });
+
+  it("should render the component correctly", () => {
+    render(
+      <Provider store={store}>
+        <Toggle {...mockProps} />
+      </Provider>
+    );
+
+    expect(screen.getByText("Test Label")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox")).toBeInTheDocument();
+  });
+
+  it("should toggle defaultValue when clicked", () => {
+    render(
+      <Provider store={store}>
+        <Toggle {...mockProps} />
+      </Provider>
+    );
+
+    const checkbox = screen.getByRole("checkbox");
+
+    // Click to toggle ON
+    fireEvent.click(checkbox);
+    expect(isFieldUpdate).toHaveBeenCalledWith(mockProps, "Y", "other_name_or_alias");
+    expect(aliasAction.addAliasField).toHaveBeenCalledWith("alias_1");
+
+    // Click to toggle OFF
+    fireEvent.click(checkbox);
+    expect(isFieldUpdate).toHaveBeenCalledWith(mockProps, "N", "other_name_or_alias");
+    expect(aliasAction.resetAliasField).toHaveBeenCalledWith([]);
+  });
+
+  it("should open the tooltip popup when info icon is clicked", () => {
+    render(
+      <Provider store={store}>
+        <Toggle {...mockProps} />
+      </Provider>
+    );
+
+    const tooltipIcon = screen.getByClass("tool-tip__icon");
+    fireEvent.click(tooltipIcon);
+    expect(screen.getByText("Tooltip Details")).toBeInTheDocument();
+  });
+
+  it("should handle stage and applicant conditions in useEffect", () => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              applicants: { other_name_or_alias_a_1: "Y" },
+            },
+            stageId: "ssf-2",
+          },
+        ],
+        journeyType: "",
+      },
+      alias: { fields: [], count: 0 },
+    });
+
+    render(
+      <Provider store={store}>
+        <Toggle {...mockProps} />
+      </Provider>
+    );
+
+    expect(isFieldUpdate).toHaveBeenCalledWith(
+      mockProps,
+      "Y",
+      "other_name_or_alias"
+    );
+  });
+
+  it("should handle edge cases for unknown field values", () => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              applicants: { other_name_or_alias_a_1: null },
+            },
+            stageId: "ssf-2",
+          },
+        ],
+        journeyType: "",
+      },
+      alias: { fields: [], count: 0 },
+    });
+
+    render(
+      <Provider store={store}>
+        <Toggle {...mockProps} />
+      </Provider>
+    );
+
+    expect(isFieldUpdate).toHaveBeenCalledWith(
+      mockProps,
+      "N",
+      "other_name_or_alias"
+    );
+  });
+
+  it("should not render for specific stageId and journeyType combination", () => {
+    store = mockStore({
+      stages: {
+        stages: [{ stageId: "ssf-2" }],
+        journeyType: "some-journey",
+      },
+      alias: { fields: [], count: 0 },
+    });
+
+    render(
+      <Provider store={store}>
+        <Toggle {...mockProps} />
+      </Provider>
+    );
+
+    expect(screen.queryByText("Test Label")).not.toBeInTheDocument();
+  });
+});
+
