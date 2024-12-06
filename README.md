@@ -4202,3 +4202,200 @@ describe("Toggle Component", () => {
   });
 });
 
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import Toggle from "../path/to/Toggle"; // Adjust the path to your component
+import { useDispatch, useSelector } from "react-redux";
+
+// Mock Redux hooks
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+const mockDispatch = jest.fn();
+
+describe("Toggle Component", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    useDispatch.mockReturnValue(mockDispatch);
+  });
+
+  const setupComponent = (mockProps, mockStageSelector, mockAliasSelector) => {
+    useSelector.mockImplementation((selectorFn) =>
+      selectorFn({
+        stages: { stages: mockStageSelector, journeyType: "someType" },
+        alias: mockAliasSelector,
+      })
+    );
+    render(<Toggle {...mockProps} />);
+  };
+
+  it("renders the toggle label and interacts correctly when initially checked", () => {
+    const mockProps = {
+      data: {
+        logical_field_name: "other_name_or_alias",
+        rwb_label_name: "Toggle Label",
+        info_tooltips: "Yes",
+        details: { tooltipInfo: "Some Info" },
+      },
+      handleCallback: jest.fn(),
+      handleFieldDispatch: jest.fn(),
+      value: "",
+    };
+
+    const mockStageSelector = [
+      {
+        stageInfo: {
+          applicants: {
+            other_name_or_alias_a_1: "Y", // Branch: initially "Y"
+          },
+        },
+        stageId: "ssf-1",
+      },
+    ];
+
+    const mockAliasSelector = { fields: ["alias_1"], count: 0 };
+
+    setupComponent(mockProps, mockStageSelector, mockAliasSelector);
+
+    // Verify label and checkbox
+    expect(screen.getByText("Toggle Label")).toBeInTheDocument();
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox).toBeChecked();
+
+    // Simulate unchecking
+    fireEvent.click(checkbox);
+    expect(mockDispatch).toHaveBeenCalledWith(expect.anything()); // Dispatch is triggered
+  });
+
+  it("renders the toggle label and interacts correctly when initially unchecked", () => {
+    const mockProps = {
+      data: {
+        logical_field_name: "cheque_book_request",
+        rwb_label_name: "Cheque Book Request",
+        info_tooltips: "No", // Tooltip is disabled
+      },
+      handleCallback: jest.fn(),
+      handleFieldDispatch: jest.fn(),
+      value: "",
+    };
+
+    const mockStageSelector = [
+      {
+        stageInfo: {
+          applicants: {
+            cheque_book_request_a_1: "N", // Branch: initially "N"
+          },
+        },
+        stageId: "ssf-2", // Branch: stageId check
+      },
+    ];
+
+    const mockAliasSelector = { fields: [], count: 1 };
+
+    setupComponent(mockProps, mockStageSelector, mockAliasSelector);
+
+    // Verify label and checkbox
+    expect(screen.getByText("Cheque Book Request")).toBeInTheDocument();
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox).not.toBeChecked();
+
+    // Simulate checking
+    fireEvent.click(checkbox);
+    expect(mockDispatch).toHaveBeenCalledWith(expect.anything()); // Dispatch is triggered
+  });
+
+  it("shows tooltip modal when info_tooltips is Yes and stageId doesn't match", () => {
+    const mockProps = {
+      data: {
+        logical_field_name: "other_name_or_alias",
+        rwb_label_name: "Toggle Label",
+        info_tooltips: "Yes",
+        details: { tooltipInfo: "Tooltip Information" },
+      },
+      handleCallback: jest.fn(),
+      handleFieldDispatch: jest.fn(),
+      value: "",
+    };
+
+    const mockStageSelector = [
+      {
+        stageInfo: {
+          applicants: {
+            other_name_or_alias_a_1: "Y",
+          },
+        },
+        stageId: "ssf-3", // Branch: doesn't match "ssf-2"
+      },
+    ];
+
+    const mockAliasSelector = { fields: [], count: 0 };
+
+    setupComponent(mockProps, mockStageSelector, mockAliasSelector);
+
+    // Click tooltip icon and verify modal is rendered
+    const toolTipIcon = screen.getByClassName("tool-tip__icon");
+    fireEvent.click(toolTipIcon);
+    expect(screen.getByText("Tooltip Information")).toBeInTheDocument();
+  });
+
+  it("doesn't render Alias component when logical_field_name is not 'other_name_or_alias'", () => {
+    const mockProps = {
+      data: {
+        logical_field_name: "some_other_field",
+        rwb_label_name: "Another Toggle",
+      },
+      handleCallback: jest.fn(),
+      handleFieldDispatch: jest.fn(),
+      value: "",
+    };
+
+    const mockStageSelector = [
+      {
+        stageInfo: {
+          applicants: {
+            some_other_field_a_1: "Y", // Branch: logical_field_name mismatch
+          },
+        },
+        stageId: "ssf-1",
+      },
+    ];
+
+    const mockAliasSelector = { fields: [], count: 0 };
+
+    setupComponent(mockProps, mockStageSelector, mockAliasSelector);
+
+    expect(screen.queryByTestId("Alias")).not.toBeInTheDocument();
+  });
+
+  it("renders Alias component when logical_field_name is 'other_name_or_alias' and checked", () => {
+    const mockProps = {
+      data: {
+        logical_field_name: "other_name_or_alias",
+        rwb_label_name: "Alias Toggle",
+      },
+      handleCallback: jest.fn(),
+      handleFieldDispatch: jest.fn(),
+      value: "",
+    };
+
+    const mockStageSelector = [
+      {
+        stageInfo: {
+          applicants: {
+            other_name_or_alias_a_1: "Y", // Branch: Alias logic active
+          },
+        },
+        stageId: "ssf-1",
+      },
+    ];
+
+    const mockAliasSelector = { fields: ["alias_1"], count: 1 };
+
+    setupComponent(mockProps, mockStageSelector, mockAliasSelector);
+
+    expect(screen.getByTestId("Alias")).toBeInTheDocument();
+  });
+});
+
