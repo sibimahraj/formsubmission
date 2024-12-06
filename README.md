@@ -4399,3 +4399,170 @@ describe("Toggle Component", () => {
   });
 });
 
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import Toggle from "../path/to/Toggle"; // Adjust the path to your component
+import { useDispatch, useSelector } from "react-redux";
+
+// Mocking necessary parts
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+const mockDispatch = jest.fn();
+useDispatch.mockReturnValue(mockDispatch);
+
+describe("Toggle Component", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const mockStageSelector = [
+    {
+      stageInfo: {
+        applicants: {
+          cheque_book_request_a_1: "N",
+          other_name_or_alias_a_1: "Y",
+        },
+      },
+      stageId: "ssf-1",
+    },
+  ];
+  const mockAliasSelector = {
+    fields: ["alias_1"],
+    count: 0,
+  };
+
+  useSelector.mockImplementation((callback) =>
+    callback({
+      stages: { stages: mockStageSelector, journeyType: "someType" },
+      alias: mockAliasSelector,
+    })
+  );
+
+  const mockProps = {
+    data: {
+      logical_field_name: "other_name_or_alias",
+      rwb_label_name: "Toggle Label",
+      info_tooltips: "Yes",
+      details: { tooltipInfo: "Some Info" },
+    },
+    handleCallback: jest.fn(),
+    handleFieldDispatch: jest.fn(),
+    value: "",
+  };
+
+  it("renders the toggle component correctly", () => {
+    render(<Toggle {...mockProps} />);
+
+    // Check initial rendering
+    expect(screen.getByText("Toggle Label")).toBeInTheDocument();
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox).toBeChecked();
+  });
+
+  it("handles useEffect logic when defaultValue is true", () => {
+    render(<Toggle {...mockProps} />);
+
+    // Check if dispatch is called to update the field
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.any(Function) // Assuming isFieldUpdate is a function being dispatched
+    );
+
+    // Ensure defaultValue is set correctly
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox).toBeChecked();
+  });
+
+  it("handles useEffect logic when defaultValue is false", () => {
+    const updatedMockStageSelector = [
+      {
+        stageInfo: {
+          applicants: {
+            other_name_or_alias_a_1: "N",
+          },
+        },
+        stageId: "ssf-1",
+      },
+    ];
+
+    useSelector.mockImplementation((callback) =>
+      callback({
+        stages: { stages: updatedMockStageSelector, journeyType: "someType" },
+        alias: mockAliasSelector,
+      })
+    );
+
+    render(<Toggle {...mockProps} />);
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it("handles onToggle logic when turning off", () => {
+    render(<Toggle {...mockProps} />);
+    const checkbox = screen.getByRole("checkbox");
+
+    // Simulate toggle off
+    fireEvent.click(checkbox);
+
+    // Check dispatch for turning off
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.any(Function) // Assuming isFieldUpdate is called
+    );
+
+    // Check if alias fields are reset
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: "alias/resetAliasField",
+      payload: [],
+    });
+  });
+
+  it("handles onToggle logic when turning on", () => {
+    const updatedMockStageSelector = [
+      {
+        stageInfo: {
+          applicants: {
+            other_name_or_alias_a_1: "N",
+          },
+        },
+        stageId: "ssf-1",
+      },
+    ];
+
+    useSelector.mockImplementation((callback) =>
+      callback({
+        stages: { stages: updatedMockStageSelector, journeyType: "someType" },
+        alias: { fields: [], count: 0 },
+      })
+    );
+
+    render(<Toggle {...mockProps} />);
+    const checkbox = screen.getByRole("checkbox");
+
+    // Simulate toggle on
+    fireEvent.click(checkbox);
+
+    // Check dispatch for turning on
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.any(Function) // Assuming isFieldUpdate is called
+    );
+
+    // Check if alias fields are updated
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: "alias/addAliasField",
+      payload: "alias_1",
+    });
+  });
+
+  it("renders the tooltip icon and handles tooltip click", () => {
+    render(<Toggle {...mockProps} />);
+
+    const toolTipIcon = screen.getByText(""); // Adjust selector if tooltip has an accessible text
+    fireEvent.click(toolTipIcon);
+
+    // Check if tooltip model is rendered
+    expect(screen.getByText("Some Info")).toBeInTheDocument();
+  });
+});
+
