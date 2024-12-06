@@ -4566,3 +4566,84 @@ describe("Toggle Component", () => {
   });
 });
 
+it("handles onClick event to set showInfoPopup to true", () => {
+  const mockProps = {
+    data: {
+      logical_field_name: "other_name_or_alias",
+      rwb_label_name: "Toggle Label",
+      info_tooltips: "Yes", // Tooltip is enabled
+      details: { tooltipInfo: "Some Info" },
+    },
+    handleCallback: jest.fn(),
+    handleFieldDispatch: jest.fn(),
+    value: "",
+  };
+
+  const mockStageSelector = [
+    {
+      stageInfo: {
+        applicants: {
+          other_name_or_alias_a_1: "Y",
+        },
+      },
+      stageId: "ssf-1",
+    },
+  ];
+
+  const mockAliasSelector = { fields: ["alias_1"], count: 0 };
+
+  setupComponent(mockProps, mockStageSelector, mockAliasSelector);
+
+  // Simulate clicking the info tooltip icon
+  const toolTipIcon = screen.getByClassName("tool-tip__icon");
+  fireEvent.click(toolTipIcon);
+
+  // Expect the popup to be displayed
+  expect(mockDispatch).toHaveBeenCalledWith(
+    expect.objectContaining({
+      type: "SET_SHOW_INFO_POPUP", // Replace with the actual action if available
+      payload: true,
+    })
+  );
+});
+
+it("handles handlePopupBackButton correctly", () => {
+  const mockProps = {
+    data: {
+      logical_field_name: "other_name_or_alias",
+      rwb_label_name: "Toggle Label",
+      info_tooltips: "Yes",
+      details: { tooltipInfo: "Some Info" },
+    },
+    handleCallback: jest.fn(),
+    handleFieldDispatch: jest.fn(),
+    value: "",
+  };
+
+  const mockStageSelector = [
+    {
+      stageInfo: {
+        applicants: {
+          other_name_or_alias_a_1: "Y",
+        },
+      },
+      stageId: "ssf-1",
+    },
+  ];
+
+  const mockAliasSelector = { fields: ["alias_1"], count: 0 };
+
+  setupComponent(mockProps, mockStageSelector, mockAliasSelector);
+
+  // Simulate clicking the back button in the popup
+  const backButton = screen.getByText("Back"); // Adjust selector to match the actual back button text/role
+  fireEvent.click(backButton);
+
+  // Expect the popup state to be reset
+  expect(mockDispatch).toHaveBeenCalledWith(
+    expect.objectContaining({
+      type: "SET_SHOW_INFO_POPUP", // Replace with the actual action if available
+      payload: false,
+    })
+  );
+});
