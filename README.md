@@ -550,3 +550,91 @@ const dispatch = useDispatch();
   );
 };
 export default LoanTopUp;
+
+
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
+import LoanTopUp from './loan-top-up';
+import { loanTopUpAction } from '../../../utils/store/loan-topup-slice';
+
+const mockStore = {
+  stages: {
+    stages: [
+      {
+        stageInfo: {
+          applicants: {
+            max_eligible_amount: 10000, // Mock eligible amount
+          },
+        },
+      },
+    ],
+  },
+};
+
+const mockDispatch = jest.fn();
+const mockTopUpClick = jest.fn();
+
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useDispatch: () => mockDispatch,
+  useSelector: (selector) => selector(mockStore),
+}));
+
+jest.mock('../../../services/validation-service', () => ({
+  formateCurrency: jest.fn((amount) => amount.toLocaleString('en-US', { style: 'currency', currency: 'SGD' })),
+}));
+
+describe('LoanTopUp Component', () => {
+  const store = configureStore({
+    reducer: {
+      stages: (state = mockStore.stages) => state,
+    },
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('renders correctly with initial data', () => {
+    render(
+      <Provider store={store}>
+        <LoanTopUp topUpClick={mockTopUpClick} />
+      </Provider>
+    );
+
+    expect(screen.getByText('You have existing loan(s) eligible for top up')).toBeInTheDocument();
+    expect(screen.getByText('Top up your existing CashOne to enjoy the same interest rate as your existing CashOne.')).toBeInTheDocument();
+    expect(screen.getByText('Your maximum eligible loan amount is')).toBeInTheDocument();
+    expect(screen.getByText('SGD 10,000.00')).toBeInTheDocument();
+    expect(screen.getByText('Select an existing loan to top up')).toBeInTheDocument();
+  });
+
+  it('dispatches action when "Top up loan" button is clicked', () => {
+    render(
+      <Provider store={store}>
+        <LoanTopUp topUpClick={mockTopUpClick} />
+      </Provider>
+    );
+
+    const button = screen.getByText('Top up loan');
+    fireEvent.click(button);
+
+    expect(mockDispatch).toHaveBeenCalledWith(loanTopUpAction.setexistingLoanTopUp(true));
+    expect(mockTopUpClick).toHaveBeenCalled();
+  });
+
+  it('dispatches action when "I want to apply for a new loan instead" is clicked', () => {
+    render(
+      <Provider store={store}>
+        <LoanTopUp topUpClick={mockTopUpClick} />
+      </Provider>
+    );
+
+    const newLoanLink = screen.getByText('I want to apply for a new loan instead');
+    fireEvent.click(newLoanLink);
+
+    expect(mockDispatch).toHaveBeenCalledWith(loanTopUpAction.setnewLoanTopUp(true));
+    expect(mockTopUpClick).toHaveBeenCalled();
+  });
+});
