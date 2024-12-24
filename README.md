@@ -495,3 +495,58 @@ describe("Phone Component", () => {
     expect(screen.getByText("Please correct the errors in Mobile Number")).toBeInTheDocument();
   });
 });
+
+import { useDispatch, useSelector } from "react-redux";
+import "./loan-top-up.scss";
+import SelectionBox from "../selection-box/selection-box";
+import { loanTopUpAction } from "../../../utils/store/loan-topup-slice";
+import {  StoreModel } from "../../../utils/model/common-model";
+import validateService from "../../../services/validation-service";
+
+const LoanTopUp = (props: any) => {
+
+ const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+
+  const loanForm = {
+    logical_field_name: "loan_account_list",
+    rwb_label_name: "Select an existing loan to top up"
+}
+const dispatch = useDispatch();
+
+  const choosingLoanTopUP = () => {    
+    dispatch(loanTopUpAction.setexistingLoanTopUp(true));
+    props.topUpClick();
+  }
+
+  const choosingNewLoan = () => {    
+    dispatch(loanTopUpAction.setnewLoanTopUp(true));
+    props.topUpClick();
+  }
+
+  return (
+    <>
+      <div className="topUp-modal">
+        <div className="topUp-modal-header">
+          <div className="loan_topup_head">You have existing loan(s) eligible for top up</div>
+          <div className="topUp-modal-desc">Top up your existing CashOne to enjoy the same interest rate as your existing CashOne.</div>
+        </div>
+        <div className="topUp-eligible-header">
+          <div>Your maximum eligible loan amount is</div>
+          <div className="topUp-eligible-amnt">{`SGD ${validateService.formateCurrency(stageSelector[0].stageInfo.applicants.max_eligible_amount)}`}</div>
+        </div>
+        <div key='topUp-selectBox'>
+          <SelectionBox 
+          data = {loanForm}
+          flowType = "ExistingTopForPL"
+          />
+        </div>
+        <button className="topUp-button" onClick={choosingLoanTopUP}>Top up loan</button>
+        <div className="topUp-newLoan" onClick={choosingNewLoan}>
+        <span className ='topUp-loan-desc'>I want to apply for a new loan instead</span>
+        <span className='topUp-loan'></span>
+        </div>
+      </div>
+    </>
+  );
+};
+export default LoanTopUp;
