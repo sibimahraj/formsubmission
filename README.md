@@ -1209,3 +1209,216 @@ jest.mock('../utils/common/change.utils', () => ({
       });
     });
   });
+
+
+  import generatePayload from "./payload";
+import { getUrl } from "../utils/common/change.utils";
+import { store } from "../utils/store/store";
+import submitService from "./submit-service";
+
+jest.autoMockOff();
+jest.mock("axios", () => ({
+  __esModule: true,
+}));
+jest.mock('../utils/common/change.utils', () => ({
+  getUrl: {
+    getProductInfo: jest.fn(),
+    getParameterByName: jest.fn(),
+    getChannelRefNo: jest.fn(() => ({
+      channelRefNo: 'mock-channel',
+      applicationRefNo: 'mock-app-ref',
+    })),
+    getRate: jest.fn(),
+  },
+  authenticateType: jest.fn(() => "manual")
+}));
+
+jest.mock('./submit-service', () => ({
+  generateUUID: jest.fn(() => 'mock-uuid'),
+}));
+
+describe('Service class', () => {
+  describe('formConfigPayload', () => {
+    it('should generate payload with product info and default product type', () => {
+      const mockProductInfo = [{ product_type: 'mockType' }];
+      (getUrl.getProductInfo as jest.Mock).mockReturnValue(mockProductInfo);
+      (getUrl.getParameterByName as jest.Mock).mockReturnValue(null);
+
+      const result = generatePayload.formConfigPayload();
+      expect(result.products).toEqual(mockProductInfo);
+      expect(result.productsInBundle).toEqual(['mockType']);
+    });
+
+    it('should generate payload with product type from URL', () => {
+      (getUrl.getProductInfo as jest.Mock).mockReturnValue([]);
+      (getUrl.getParameterByName as jest.Mock).mockReturnValue('URLType');
+
+      const result = generatePayload.formConfigPayload({channel_reference:"wd", application_reference:"wd", application:{channel_reference:"ss"}});
+      expect(result.productsInBundle).toEqual(['URLType']);
+    });
+  });
+
+  describe('createPayload', () => {
+    beforeEach(() => {
+      store.getState = jest.fn().mockReturnValue({
+        referralcode: {
+          refer: true,
+          referId: '122'
+        }
+      });
+    });
+
+    it('should generate payload with application reference', () => {
+      const result = generatePayload.createPayload(
+        { stageInfo: {}, stageId: 'ACD' },
+        {"test": "test", "test1": "", referral_id_2_a_1: "w"},
+        'mock/dwd'
+      );
+
+      expect(result.application.channel_reference).toBe('mock-channel');
+      expect(result.application.application_reference).toBe('mock-app-ref');
+    });
+
+    it('should generate payload with application reference with ssf-2 stage', () => {
+      (getUrl.getRate as jest.Mock).mockReturnValue({ ar: "test" });
+      const result = generatePayload.createPayload(
+        { stageInfo: { applicants: { rbp_applied_rate_a_1: "test" } }, stageId: 'ld-1' },
+        {"test": "test", "test1": "", referral_id_2_a_1: "w", rbp_applied_rate_a_1: "12"},
+        'mock/dwd'
+      );
+
+      expect(result.application.channel_reference).toBe('mock-channel');
+      expect(result.application.application_reference).toBe('mock-app-ref');
+    });
+
+    it('should add save_exit flag if isExit is true', () => {
+      const result = generatePayload.createPayload(
+        { stageInfo: {}, stageId: 'mock-stage' },
+        {},
+        'mock/url',
+        true
+      );
+
+      expect(result.application.save_exit).toBe('Yes');
+    });
+
+    it('should set stage code to AD for ad-1 or ad-2', () => {
+      const result = generatePayload.createPayload(
+        { stageInfo: {}, stageId: 'ad-1' },
+        {},
+        'wdwd.com/create',
+        true
+      );
+
+      expect(result.application.save_exit).toBe('Yes');
+    });
+
+    it('should set stage code to FFD for rp', () => {
+      const result = generatePayload.createPayload(
+        { stageInfo: {}, stageId: 'rp' },
+        {},
+        'wdwd.com/create',
+        true
+      );
+
+      expect(result.application.save_exit).toBe('Yes');
+    });
+
+    it('should set stage code to LD for ld-1', () => {
+      const result = generatePayload.createPayload(
+        { stageInfo: {}, stageId: 'ld-1' },
+        {},
+        'wdwd.com/create',
+        true
+      );
+
+      expect(result.application.save_exit).toBe('Yes');
+    });
+
+    it('should set stage code to BD for other stages', () => {
+      const result = generatePayload.createPayload(
+        { stageInfo: {}, stageId: 'other-stage' },
+        {},
+        'wdwd.com/create',
+        true
+      );
+
+      expect(result.application.save_exit).toBe('Yes');
+    });
+
+    it('should handle referral code correctly when resume is true', () => {
+      store.getState = jest.fn().mockReturnValue({
+        referralcode: {
+          refer: false,
+          referId: "12"
+        },
+        urlParam: {
+          resume: true
+        }
+      });
+
+      const result = generatePayload.createPayload(
+        { stageInfo: {}, stageId: 'rp' },
+        {},
+        'wdwd.com/create',
+        true
+      );
+
+      expect(result.application.save_exit).toBe('Yes');
+    });
+  });
+
+  describe('offerPayload', () => {
+    it('should generate payload with channel reference', () => {
+      const result = generatePayload.offerPayload({});
+      expect(result.application.channel_reference).toBe('mock-channel');
+      expect(result.application.application_reference).toBe('mock-app-ref');
+    });
+  });
+
+  describe('getCardActivationPayload', () => {
+    beforeEach(() => {
+      (getUrl.getChannelRefNo as jest.Mock).mockReturnValue({
+        channelRefNo: 'mock-channel',
+        applicationRefNo: 'mock-app-ref',
+      });
+    });
+
+    it('should generate payload with product details', () => {
+      const result = generatePayload.getCardActivationPayload({
+        productSequenceNo: '1',
+        productCategory: 'mock-category',
+        productType: 'mock-type',
+      });
+
+      expect(result.application_reference_no).toBe('mock-app-ref');
+      expect(result.country_code).toBe('SG');
+      expect(result.applicant_sequence_no).toBe('1');
+      expect(result.product_sequence_no).toBe('1');
+      expect(result.product_category).toBe('mock-category');
+      expect(result.product_type).toBe('mock-type');
+      expect(result.tracking_id).toBe('mock-uuid');
+    });
+
+    it('should handle missing application reference gracefully', () => {
+      (getUrl.getChannelRefNo as jest.Mock).mockReturnValue({
+        channelRefNo: 'mock-channel',
+        applicationRefNo: null,
+      });
+
+      const result = generatePayload.getCardActivationPayload({
+        productSequenceNo: '1',
+        productCategory: 'mock-category',
+        productType: 'mock-type',
+      });
+
+      expect(result.application_reference_no).toBe(null);
+      expect(result.country_code).toBe('SG');
+      expect(result.applicant_sequence_no).toBe('1');
+      expect(result.product_sequence_no).toBe('1');
+      expect(result.product_category).toBe('mock-category');
+      expect(result.product_type).toBe('mock-type');
+      expect(result.tracking_id).toBe('mock-uuid');
+    });
+  });
+});
