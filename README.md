@@ -1704,3 +1704,120 @@ const LoanDetailsInfo = (props: KeyWithAnyModel) => {
 
 export default LoanDetailsInfo;
 
+
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import LoanDetailsInfo from "./LoanDetailsInfo";
+import loanDetailsConst from "../../../assets/_json/loan-details.json";
+import interestRates from "../../../assets/_json/bt-interest-rate.json";
+import validateService from "../../../services/validation-service";
+import { rateAction } from "../../../utils/store/rate-slice";
+
+jest.mock("../../../services/validation-service", () => ({
+  formateCurrency: jest.fn((value) => `SGD ${value}`),
+  getEIR: jest.fn(() => "3.5,2.5"),
+}));
+
+const mockStore = configureStore([]);
+const initialState = {
+  stages: {
+    userInput: {
+      applicants: {
+        loan_tenor_a_1: "12",
+        required_loan_amount_a_1: "10000",
+        Transfer_amount_a_1: "5000",
+      },
+    },
+    stages: [
+      {
+        stageInfo: {
+          products: [
+            {
+              product_type: "280",
+              campaign: "campaign1",
+            },
+          ],
+          applicants: {
+            staff_category_a_1: "N",
+            rbp_applied_rate_a_1: "2.5",
+          },
+        },
+      },
+    ],
+    journeyType: "BT",
+  },
+  rate: {
+    ar: 0,
+  },
+  loanTopUp: {
+    existingLoanTopUp: true,
+    interestRate: "1.5",
+    topupAmount: "2000",
+  },
+};
+
+describe("LoanDetailsInfo Component", () => {
+  let store;
+
+  beforeEach(() => {
+    store = mockStore(initialState);
+  });
+
+  test("renders without crashing and displays loan details", () => {
+    render(
+      <Provider store={store}>
+        <LoanDetailsInfo />
+      </Provider>
+    );
+
+    expect(screen.getByText("SGD 0 / 12 months")).toBeInTheDocument();
+  });
+
+  test("calculates and displays monthly repayment and estimated cashback", () => {
+    render(
+      <Provider store={store}>
+        <LoanDetailsInfo />
+      </Provider>
+    );
+
+    const monthlyRepayment = screen.getByText(/SGD 0 \/ 12 months/i);
+    const cashback = screen.getByText(/SGD 0/i);
+
+    expect(monthlyRepayment).toBeInTheDocument();
+    expect(cashback).toBeInTheDocument();
+  });
+
+  test("displays the correct loan details for product type 280", () => {
+    render(
+      <Provider store={store}>
+        <LoanDetailsInfo />
+      </Provider>
+    );
+
+    expect(screen.getByText(loanDetailsConst.annualFee)).toBeInTheDocument();
+    expect(screen.getByText(loanDetailsConst.annulPercentageRate)).toBeInTheDocument();
+    expect(screen.getByText(loanDetailsConst.EIR)).toBeInTheDocument();
+    expect(screen.getByText(loanDetailsConst.estimatedCashback)).toBeInTheDocument();
+  });
+
+  test("opens and closes the modal correctly", () => {
+    render(
+      <Provider store={store}>
+        <LoanDetailsInfo />
+      </Provider>
+    );
+
+    const infoIcon = screen.getAllByRole("button")[0];
+    fireEvent.click(infoIcon);
+
+    expect(screen.getByText(/showLoanInfo/i)).toBeInTheDocument();
+
+    const backButton = screen.getByRole("button", { name: /back/i });
+    fireEvent.click(backButton);
+
+    expect(screen.queryByText(/showLoanInfo/i)).not.toBeInTheDocument();
+  });
+}); 
+
