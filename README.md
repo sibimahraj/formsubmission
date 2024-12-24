@@ -295,3 +295,203 @@ describe('Phone Component', () => {
     });
 }); 
 
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+import Phone from "./phone";
+
+const mockStore = {
+  lov: {
+    lov: [
+      { label: "CountryCode", value: ["(+65)", "(+1)"] },
+    ],
+  },
+  stages: {
+    stages: [
+      {
+        stageId: "stage1",
+        stageInfo: {
+          applicants: {
+            "mobile_number_a_1": "912345678",
+          },
+        },
+      },
+    ],
+    userInput: {
+      applicants: {
+        "mobile_number_a_1": "912345678",
+      },
+    },
+  },
+  fielderror: {
+    error: false,
+  },
+  lastAction: {
+    getField: jest.fn(),
+  },
+};
+
+const mockHandleCallback = jest.fn();
+
+const store = configureStore({
+  reducer: {
+    lov: (state = mockStore.lov) => state,
+    stages: (state = mockStore.stages) => state,
+    fielderror: (state = mockStore.fielderror) => state,
+    lastAction: (state = mockStore.lastAction) => state,
+  },
+});
+
+describe("Phone Component", () => {
+  it("renders correctly and shows the default value", () => {
+    render(
+      <Provider store={store}>
+        <Phone
+          data={{
+            logical_field_name: "mobile_number",
+            rwb_label_name: "Mobile Number",
+            mandatory: "Yes",
+            min_length: 8,
+            regex: "^\\d+$",
+          }}
+          handleCallback={mockHandleCallback}
+        />
+      </Provider>
+    );
+
+    expect(screen.getByText("Mobile Number")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Mobile Number")).toHaveValue("912345678");
+  });
+
+  it("renders country codes from LOV data", () => {
+    render(
+      <Provider store={store}>
+        <Phone
+          data={{
+            logical_field_name: "mobile_number",
+            rwb_label_name: "Mobile Number",
+          }}
+          handleCallback={mockHandleCallback}
+        />
+      </Provider>
+    );
+
+    expect(screen.getByText("(+65)")).toBeInTheDocument();
+    expect(screen.getByText("(+1)")).toBeInTheDocument();
+  });
+
+  it("shows an error when input starts with an invalid digit", () => {
+    render(
+      <Provider store={store}>
+        <Phone
+          data={{
+            logical_field_name: "mobile_number",
+            rwb_label_name: "Mobile Number",
+            mandatory: "Yes",
+          }}
+          handleCallback={mockHandleCallback}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Mobile Number");
+    fireEvent.change(input, { target: { value: "712345678" } });
+
+    expect(screen.getByText("Please enter your Mobile number starting with either 8 or 9")).toBeInTheDocument();
+  });
+
+  it("shows an error when input length is less than the minimum required", () => {
+    render(
+      <Provider store={store}>
+        <Phone
+          data={{
+            logical_field_name: "mobile_number",
+            rwb_label_name: "Mobile Number",
+            mandatory: "Yes",
+            min_length: 8,
+          }}
+          handleCallback={mockHandleCallback}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Mobile Number");
+    fireEvent.change(input, { target: { value: "91234" } });
+
+    expect(screen.getByText("Minimum length is 8 digits")).toBeInTheDocument();
+  });
+
+  it("validates input against regex and shows an error for invalid patterns", () => {
+    render(
+      <Provider store={store}>
+        <Phone
+          data={{
+            logical_field_name: "mobile_number",
+            rwb_label_name: "Mobile Number",
+            regex: "^\\d+$",
+          }}
+          handleCallback={mockHandleCallback}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Mobile Number");
+    fireEvent.change(input, { target: { value: "91abc456" } });
+
+    expect(screen.getByText("Please enter a valid Mobile Number")).toBeInTheDocument();
+  });
+
+  it("calls handleCallback with updated value on change", () => {
+    render(
+      <Provider store={store}>
+        <Phone
+          data={{
+            logical_field_name: "mobile_number",
+            rwb_label_name: "Mobile Number",
+          }}
+          handleCallback={mockHandleCallback}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Mobile Number");
+    fireEvent.change(input, { target: { value: "912345678" } });
+
+    expect(mockHandleCallback).toHaveBeenCalledWith(
+      { logical_field_name: "mobile_number", rwb_label_name: "Mobile Number" },
+      "912345678"
+    );
+  });
+
+  it("updates the error state when the fieldErrorSelector is triggered", () => {
+    const mockErrorStore = {
+      ...mockStore,
+      fielderror: {
+        error: true,
+      },
+    };
+
+    const errorStore = configureStore({
+      reducer: {
+        lov: (state = mockStore.lov) => state,
+        stages: (state = mockStore.stages) => state,
+        fielderror: (state = mockErrorStore.fielderror) => state,
+        lastAction: (state = mockStore.lastAction) => state,
+      },
+    });
+
+    render(
+      <Provider store={errorStore}>
+        <Phone
+          data={{
+            logical_field_name: "mobile_number",
+            rwb_label_name: "Mobile Number",
+          }}
+          handleCallback={mockHandleCallback}
+        />
+      </Provider>
+    );
+
+    expect(screen.getByText("Please correct the errors in Mobile Number")).toBeInTheDocument();
+  });
+});
