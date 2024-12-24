@@ -1821,3 +1821,73 @@ describe("LoanDetailsInfo Component", () => {
   });
 }); 
 
+import React from "react";
+import { render, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import LoanDetailsInfo from "./LoanDetailsInfo";
+
+const mockStore = configureStore([]);
+const initialState = {
+  stages: {
+    userInput: {
+      applicants: {
+        loan_tenor_a_1: "12",
+        required_loan_amount_a_1: "10000",
+        Transfer_amount_a_1: "5000",
+      },
+    },
+    stages: [
+      {
+        stageInfo: {
+          products: [
+            {
+              product_type: "280",
+              campaign: "campaign1",
+            },
+          ],
+          applicants: {
+            staff_category_a_1: "N",
+            rbp_applied_rate_a_1: "2.5",
+          },
+        },
+      },
+    ],
+    journeyType: "BT",
+  },
+  rate: {
+    ar: 0,
+  },
+  loanTopUp: {
+    existingLoanTopUp: true,
+    interestRate: "1.5",
+    topupAmount: "2000",
+  },
+};
+
+describe("LoanDetailsInfo Component", () => {
+  let store;
+
+  beforeEach(() => {
+    store = mockStore(initialState);
+  });
+
+  test("renders without crashing and displays correct number of elements", () => {
+    render(
+      <Provider store={store}>
+        <LoanDetailsInfo />
+      </Provider>
+    );
+
+    // Check for the main repayment detail container
+    const repaymentDetail = screen.getByTestId("repayment-detail");
+    expect(repaymentDetail).toBeInTheDocument();
+
+    // Check for the repayment rows
+    const repaymentRows = screen.getAllByClassName("repaymentRow");
+    expect(repaymentRows.length).toBe(4); // Adjust the number based on your actual rows
+
+    // Check for the presence of other specific elements if needed
+    expect(screen.getByText("SGD 0 / 12 months")).toBeInTheDocument();
+  });
+});
