@@ -2543,3 +2543,142 @@ useEffect(() => {
 export default Number;
 
 
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import thunk from 'redux-thunk';
+import Number from './Number';  // Adjust the import path as necessary
+import errorMsg from '../../../assets/_json/error.json';
+import { postalCodeValidation } from './number.utils';
+import { postalCodeAction } from '../../../utils/store/postal-code';
+
+const middlewares = [thunk];
+const mockStore = configureStore(middlewares);
+
+jest.mock('./number.utils', () => ({
+  postalCodeValidation: jest.fn(),
+}));
+
+jest.mock('../../../utils/store/postal-code', () => ({
+  postalCodeAction: {
+    setPostalCode: jest.fn(),
+  },
+}));
+
+const initialState = {
+  stages: {
+    stages: [
+      {
+        stageInfo: {
+          products: [{ product_type: '280' }],
+          application: { channel_reference: '12345' },
+          applicants: {
+            other_bank_account_bt_a_1: '',
+            reenter_other_bank_account_bt_a_1: '',
+          },
+        },
+        stageId: 'ld-1',
+      },
+    ],
+    journeyType: 'ETC',
+    userInput: {
+      applicants: {},
+    },
+    updatedStageInputs: [],
+  },
+  fielderror: {
+    error: null,
+  },
+};
+
+const mockProps = {
+  data: {
+    logical_field_name: 'postal_code',
+    rwb_label_name: 'Postal Code',
+    type: 'text',
+    mandatory: 'Yes',
+    regex: '\\d{5}',
+    min_length: 5,
+    length: 5,
+    editable: true,
+  },
+  handleCallback: jest.fn(),
+  handleFieldDispatch: jest.fn(),
+};
+
+const renderComponent = (state = initialState) => {
+  const store = mockStore(state);
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+};
+
+describe('Number Component', () => {
+  it('should render without crashing', () => {
+    renderComponent();
+    expect(screen.getByLabelText(/Postal Code/i)).toBeInTheDocument();
+  });
+
+  it('should display an error message for invalid input', () => {
+    renderComponent();
+    const input = screen.getByLabelText(/Postal Code/i);
+    fireEvent.change(input, { target: { value: '123' } });
+    fireEvent.blur(input);
+    expect(screen.getByText(`${errorMsg.patterns} Postal Code`)).toBeInTheDocument();
+  });
+
+  it('should call handleCallback with valid input', () => {
+    renderComponent();
+    const input = screen.getByLabelText(/Postal Code/i);
+    fireEvent.change(input, { target: { value: '12345' } });
+    fireEvent.blur(input);
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, '12345');
+  });
+
+  it('should trigger postal code validation on valid postal code input', async () => {
+    (postalCodeValidation as jest.Mock).mockResolvedValue('valid');
+    renderComponent();
+    const input = screen.getByLabelText(/Postal Code/i);
+    fireEvent.change(input, { target: { value: '12345' } });
+    fireEvent.blur(input);
+
+    await waitFor(() => {
+      expect(postalCodeValidation).toHaveBeenCalledWith('12345', '12345', expect.any(Object));
+      expect(postalCodeAction.setPostalCode).toHaveBeenCalledWith('valid');
+    });
+  });
+
+  it('should disable input when isPostalCodeFetch is true', () => {
+    renderComponent();
+    const input = screen.getByLabelText(/Postal Code/i);
+    fireEvent.change(input, { target: { value: '12345' } });
+
+    expect(input).toBeDisabled();
+  });
+
+  it('should show account number error on invalid account number input', () => {
+    const updatedState = {
+      ...initialState,
+      stages: {
+        ...initialState.stages,
+        userInput: {
+          applicants: {
+            scb_account_no_a_1: '12345',
+            re_enter_scb_account_no_a_1: '54321',
+          },
+        },
+      },
+    };
+    renderComponent(updatedState);
+    const input = screen.getByLabelText(/Postal Code/i);
+    fireEvent.change(input, { target: { value: '54321' } });
+    fireEvent.blur(input);
+
+    expect(screen.getByText(errorMsg.sgBankAccountMismatch_RE)).toBeInTheDocument();
+  });
+});
+
+
