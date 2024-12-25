@@ -2097,3 +2097,111 @@ const Amount = (props: KeyWithAnyModel) => {
 
 export default Amount;
 
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import Amount from './Amount';
+import loanDetailsConst from '../../../assets/_json/loan-details.json';
+import { isFieldUpdate } from '../../../utils/common/change.utils';
+
+const mockStore = configureStore([]);
+const initialState = {
+  stages: {
+    stages: [
+      {
+        stageInfo: {
+          applicants: {
+            annual_income_a_1: '50000',
+            required_annual_income_a_1: '50000'
+          }
+        }
+      }
+    ],
+    userInput: {
+      applicants: {
+        required_annual_income_a_1: '50000'
+      }
+    }
+  },
+  fielderror: {
+    error: {}
+  }
+};
+
+const mockDispatch = jest.fn();
+
+jest.mock('react-redux', () => ({
+  useSelector: jest.fn(fn => fn(initialState)),
+  useDispatch: () => mockDispatch,
+}));
+
+jest.mock('../../../utils/common/change.utils', () => ({
+  isFieldUpdate: jest.fn(),
+  isFieldValueUpdate: jest.fn(),
+  fieldError: jest.fn(),
+  fieldIdAppend: jest.fn(props => props.data.logical_field_name),
+  getUrl: {
+    getUpdatedStage: jest.fn(() => ({
+      updatedStageInputs: []
+    }))
+  }
+}));
+
+describe('Amount Component', () => {
+  let store;
+
+  beforeEach(() => {
+    store = mockStore(initialState);
+  });
+
+  const props = {
+    data: {
+      logical_field_name: 'required_annual_income',
+      rwb_label_name: 'Required Annual Income',
+      type: 'text',
+      min_length: 1,
+      length: 10
+    },
+    handleCallback: jest.fn()
+  };
+
+  test('renders Amount component and handles change correctly', () => {
+    render(
+      <Provider store={store}>
+        <Amount {...props} />
+      </Provider>
+    );
+
+    const inputElement = screen.getByLabelText(/Required Annual Income/i);
+
+    // Initial value should be formatted
+    expect(inputElement.value).toBe('50,000');
+
+    // Change input value
+    fireEvent.change(inputElement, { target: { value: '60000' } });
+
+    // Ensure state updates and callback is called
+    expect(inputElement.value).toBe('60,000');
+    expect(props.handleCallback).toHaveBeenCalledWith(props.data, '60000');
+    expect(mockDispatch).toHaveBeenCalledWith(isFieldUpdate(props, '60000', 'required_annual_income'));
+  });
+
+  test('shows error message for invalid input', () => {
+    render(
+      <Provider store={store}>
+        <Amount {...props} />
+      </Provider>
+    );
+
+    const inputElement = screen.getByLabelText(/Required Annual Income/i);
+
+    // Change input value to invalid (less than min annual income)
+    fireEvent.change(inputElement, { target: { value: '20000' } });
+
+    // Ensure error message is displayed
+    const errorMessage = screen.getByText(/Please enter Required Annual Income/i);
+    expect(errorMessage).toBeInTheDocument();
+  });
+});
+
