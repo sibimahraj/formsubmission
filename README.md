@@ -223,3 +223,135 @@ describe("DocumentFileUpload Component", () => {
     expect(label).toHaveAttribute("htmlFor", "upload-photo__CATEGORY_1_0");
   });
 });
+
+import React, { useEffect, useState } from "react";
+import "./dropdown-model.scss";
+import {
+  KeyWithAnyModel,
+  LovInputValModel,
+  StoreModel,
+} from "../../../utils/model/common-model";
+import { AccountList } from "../selection-box/selection-box.utils";
+import { useDispatch, useSelector } from "react-redux";
+import renderComponent from "../../../modules/dashboard/fields/renderer";
+import { getFields } from "../selection-box/selection-box.util";
+import { isFieldUpdate } from "../../../utils/common/change.utils";
+
+const DropDownModel = (props: KeyWithAnyModel) => {
+  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+  const applicantsSelector = useSelector(
+    (state: StoreModel) => state.stages.userInput.applicants
+  );
+  const [isEligible, setIsEligible] = useState(false);
+  const [isLabelVisible, setIsLabelVisible] = useState(false);
+  const [field, setField] = useState([]);
+  const [otherBankradiodisplay, setotherBankradiodisplay] = useState('');
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (props.logicalFieldName === 'credit_into' && props.selectedOption.length <= 1) {
+      setotherBankradiodisplay('radio-hidden');
+    }
+  }, []);
+  useEffect(() => {
+    if (props.logicalFieldName === 'credit_into') {
+      const stageComponents = dispatch(
+        getFields(stageSelector, props.selectedValue[0].CODE_VALUE, props.logicalFieldName)
+      );
+      setField(stageComponents);
+    }
+  }, [props.selectedValue]);
+
+
+  useEffect(() => {
+    if (stageSelector && stageSelector.length > 0) {
+      const prouctCode = stageSelector[0].stageInfo.products[0].product_type;
+      setIsLabelVisible(prouctCode === '601');
+    }
+  }, []);
+
+  const itemList = (item: any, index: number) => {
+    if (props.logicalFieldName === "loan_account_list") {
+      return <AccountList show={'true'} addUserInputFun={props.addUserInput} item={item} logical_field_name={props.logicalFieldName} />;
+    }
+    else {
+      return (
+        <div>
+          {props.logicalFieldName !== 'credit_into' && <div key={index} className="dropdown-select__item">
+            <input
+              type="radio"
+              checked={item.checked}
+              onClick={() => props.addUserInput(item)}
+              onChange={() => {
+                //do nothing
+              }}
+              value={item.CODE_VALUE}
+              id={item.CODE_VALUE}
+            />
+            <label htmlFor={item.CODE_VALUE}>{item.CODE_DESC}</label>
+          </div>}
+          {props.logicalFieldName === 'credit_into' && <div key={index} className={`dropdown-select__item credit_into_dropdown ${otherBankradiodisplay}`}>
+            <input
+              type="radio"
+              checked={item.checked}
+              onClick={() => props.addUserInput(item)}
+              onChange={() => {
+                //do nothing
+              }}
+              value={item.CODE_VALUE}
+              id={item.CODE_VALUE}
+            />
+            <div className="label-content">
+              <label htmlFor={item.CODE_VALUE}>
+                {item.CODE_DESC}
+              </label>
+              {props.logicalFieldName === 'credit_into' && item.CODE_VALUE !== 'Other Bank Account' &&
+                <div className="for-credit-into">{item.CODE_VALUE}
+                </div>}
+            </div>
+          </div>}
+
+        </div>
+      );
+    }
+  };
+
+  return (
+    <div>
+      <div className="dropdown-select__background">
+        <div className="dropdown-select__bg-curve"></div>
+        <div
+          className={`dropdown-select__popup ${props.logicalFieldName === "maturity_amount" ? "dropdown-select--tenor" : ""
+            }`}
+        >
+          <div className="dropdown-select__header">
+            <div>{props.label}</div>
+            <div className="close" onClick={props.close}></div>
+          </div>
+
+          <div className="dropdown-select__expand">
+            <>
+              {props.selectedOption.map(
+                (item: LovInputValModel, index: number) => {
+                  return <>{itemList(item, index)}</>;
+                }
+              )}
+            </>
+            {props.logicalFieldName === 'credit_into' && field &&
+              field.map((currentSection: KeyWithAnyModel, index: number) => {
+                return renderComponent(
+                  currentSection,
+                  index,
+                  props.handleCallback,
+                  props.handleFieldDispatch,
+                  props.value
+                );
+              })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DropDownModel;
