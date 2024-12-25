@@ -154,3 +154,72 @@ describe("DocumentUploadRadioButton Component", () => {
     expect(mockSetCheckedFlag).not.toHaveBeenCalled();
   });
 });
+
+
+import { render, screen, fireEvent } from "@testing-library/react";
+import DocumentFileUpload from "./DocumentFileUpload";
+
+describe("DocumentFileUpload Component", () => {
+  const mockChangeHandler = jest.fn();
+  const mockDocumentHeaders = jest.fn((key) => `Mocked ${key}`);
+
+  const mockProps = {
+    documentHeaders: mockDocumentHeaders,
+    docType: {
+      document_type: "ID Proof",
+      selectDocument: "Upload your ID proof",
+    },
+    documentTypes: {
+      document_category: "CATEGORY_1",
+    },
+    uploadingDocument: "mockUploadingDocument",
+    changeHandler: mockChangeHandler,
+    index: 0,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should render the document details with correct headers", () => {
+    render(<DocumentFileUpload {...mockProps} />);
+
+    // Assert that the document title and description are rendered
+    expect(screen.getByText("Mocked ID Proof")).toBeInTheDocument();
+    expect(screen.getByText("Mocked Upload your ID proof")).toBeInTheDocument();
+  });
+
+  it("should call changeHandler when a file is selected", () => {
+    render(<DocumentFileUpload {...mockProps} />);
+
+    // Simulate file upload
+    const fileInput = screen.getByRole("textbox", { hidden: true });
+    const testFile = new File(["dummy content"], "example.png", {
+      type: "image/png",
+    });
+
+    fireEvent.change(fileInput, { target: { files: [testFile] } });
+
+    // Assert that changeHandler is called with the correct arguments
+    expect(mockChangeHandler).toHaveBeenCalledWith(
+      "mockUploadingDocument",
+      mockProps.documentTypes,
+      expect.any(Object), // The event object
+      0
+    );
+  });
+
+  it("should render the input and label with correct IDs", () => {
+    render(<DocumentFileUpload {...mockProps} />);
+
+    const fileInput = screen.getByRole("textbox", { hidden: true });
+    const label = screen.getByLabelText(/upload-photo__CATEGORY_1_0/i);
+
+    // Assert input and label IDs
+    expect(fileInput).toHaveAttribute(
+      "id",
+      "upload-photo__CATEGORY_1_0"
+    );
+    expect(label).toHaveAttribute("htmlFor", "upload-photo__CATEGORY_1_0");
+  });
+});
