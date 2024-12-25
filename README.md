@@ -355,3 +355,111 @@ const DropDownModel = (props: KeyWithAnyModel) => {
 };
 
 export default DropDownModel;
+
+
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import DropDownModel from "./DropDownModel";
+
+// Mock dependencies
+jest.mock("../../../modules/dashboard/fields/renderer", () => jest.fn(() => <div>Rendered Component</div>));
+jest.mock("../../../utils/common/change.utils", () => ({
+  isFieldUpdate: jest.fn(),
+}));
+jest.mock("../selection-box/selection-box.utils", () => ({
+  AccountList: jest.fn(() => <div>Account List Component</div>),
+}));
+
+describe("DropDownModel Component", () => {
+  const mockStore = configureStore([]);
+  let store: any;
+
+  const defaultProps = {
+    label: "Dropdown Label",
+    logicalFieldName: "credit_into",
+    selectedOption: [
+      { CODE_VALUE: "Option1", CODE_DESC: "Option 1", checked: false },
+      { CODE_VALUE: "Option2", CODE_DESC: "Option 2", checked: false },
+    ],
+    selectedValue: [{ CODE_VALUE: "Option1" }],
+    addUserInput: jest.fn(),
+    close: jest.fn(),
+    handleCallback: jest.fn(),
+    handleFieldDispatch: jest.fn(),
+    value: "",
+  };
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              products: [{ product_type: "601" }],
+            },
+          },
+        ],
+        userInput: { applicants: [] },
+      },
+    });
+  });
+
+  it("renders the dropdown model with the provided label", () => {
+    render(
+      <Provider store={store}>
+        <DropDownModel {...defaultProps} />
+      </Provider>
+    );
+
+    expect(screen.getByText("Dropdown Label")).toBeInTheDocument();
+  });
+
+  it("displays the options provided in selectedOption", () => {
+    render(
+      <Provider store={store}>
+        <DropDownModel {...defaultProps} />
+      </Provider>
+    );
+
+    expect(screen.getByLabelText("Option 1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Option 2")).toBeInTheDocument();
+  });
+
+  it("handles user input selection", () => {
+    render(
+      <Provider store={store}>
+        <DropDownModel {...defaultProps} />
+      </Provider>
+    );
+
+    const option1 = screen.getByLabelText("Option 1");
+    fireEvent.click(option1);
+
+    expect(defaultProps.addUserInput).toHaveBeenCalledWith(defaultProps.selectedOption[0]);
+  });
+
+  it("renders additional fields for logicalFieldName 'credit_into'", () => {
+    render(
+      <Provider store={store}>
+        <DropDownModel {...defaultProps} />
+      </Provider>
+    );
+
+    expect(screen.getByText("Rendered Component")).toBeInTheDocument();
+  });
+
+  it("calls the close function when close button is clicked", () => {
+    render(
+      <Provider store={store}>
+        <DropDownModel {...defaultProps} />
+      </Provider>
+    );
+
+    const closeButton = screen.getByRole("button", { name: /close/i });
+    fireEvent.click(closeButton);
+
+    expect(defaultProps.close).toHaveBeenCalled();
+  });
+});
