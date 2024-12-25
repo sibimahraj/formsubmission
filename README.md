@@ -2987,3 +2987,56 @@ describe("postalCodeValidation", () => {
     );
   });
 });
+
+
+import { useDispatch,useSelector } from "react-redux";
+import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
+import "./display.scss";
+import { useEffect, useState } from "react";
+import { isFieldUpdate } from "../../../utils/common/change.utils";
+import { lastAction } from "../../../utils/store/last-accessed-slice";
+
+const Display = (props: KeyWithAnyModel) => {
+    const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+    const dispatch = useDispatch();
+    const [defaultValue, setDefaultValue] = useState("");
+ 
+      useEffect(() => {
+        let myInfoAddress :string = "";
+        if (props.data.logical_field_name === "mailing_address" || props.data.logical_field_name === "residential_address" ) {
+            if(stageSelector[0].stageInfo.application.journey_type === 'NTC' 
+            && (stageSelector[0].stageInfo.products[0].product_category === 'CC' 
+            || stageSelector[0].stageInfo.products[0].product_type === '280')){
+             myInfoAddress = (props.data.logical_field_name === "mailing_address" 
+             && stageSelector[0].stageInfo.applicants["mailing_address_a_1"])?
+             stageSelector[0].stageInfo.applicants["mailing_address_a_1"] : 
+             (props.data.logical_field_name === "residential_address" 
+             && stageSelector[0].stageInfo.applicants["res_address_a_1"]) ?
+             stageSelector[0].stageInfo.applicants["res_address_a_1"] : null;
+            }
+            if(myInfoAddress){
+              setDefaultValue(myInfoAddress);
+             dispatch(
+              isFieldUpdate(props, myInfoAddress, props.data.logical_field_name)
+              );
+            }
+          }
+          props.handleCallback(props.data, myInfoAddress);
+    }, []);
+    return (
+      <>
+        <div className="display_Info">
+             {(defaultValue && <label htmlFor={props.data.logical_field_name}>
+                {props.data.rwb_label_name}
+              </label>)}
+              {(defaultValue && <div className="display_input_field">
+                <span>{defaultValue}</span>
+              </div>)}
+        </div>
+      </>
+    );
+}
+
+export default Display;
+
+
