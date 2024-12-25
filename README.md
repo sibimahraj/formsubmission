@@ -2708,3 +2708,60 @@ export const postalCodeValidation = (value:string,channelrefNumber:number,applic
 
 
 
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { postalCodeValidation } from './path-to-your-postalCodeValidation-function';
+import { KeyWithAnyModel } from '../../../utils/model/common-model';
+
+describe('postalCodeValidation', () => {
+  let mock: MockAdapter;
+  const channelrefNumber = 12345;
+  const value = '12345';
+  const applicants: KeyWithAnyModel = {};
+
+  beforeEach(() => {
+    mock = new MockAdapter(axios);
+    process.env.REACT_APP_RTOB_APPLICATION_END_POINT = '/application';
+    process.env.REACT_APP_RTOB_BASE_URL = 'http://example.com';
+    process.env.REACT_APP_RTOB_SINGPOST = '/singpost';
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  it('should return the expected applicant data on successful API call', async () => {
+    const mockResponse = {
+      applicant: {
+        block_a_1: 'Block A',
+        building_name_a_1: 'Building Name',
+        street_name_a_1: 'Street Name',
+      },
+    };
+
+    const expectedApplicants = {
+      block_a_1: 'Block A',
+      building_name_a_1: 'Building Name',
+      street_name_a_1: 'Street Name',
+    };
+
+    const url = `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}${channelrefNumber}${process.env.REACT_APP_RTOB_SINGPOST}?zipCode=${value}`;
+    mock.onGet(url).reply(200, mockResponse);
+
+    const validatePostalCode = postalCodeValidation(value, channelrefNumber, applicants);
+
+    const result = await validatePostalCode();
+    expect(result).toEqual(expectedApplicants);
+  });
+
+  it('should return an error on failed API call', async () => {
+    const url = `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}${channelrefNumber}${process.env.REACT_APP_RTOB_SINGPOST}?zipCode=${value}`;
+    const errorMessage = 'Network Error';
+    mock.onGet(url).reply(500, errorMessage);
+
+    const validatePostalCode = postalCodeValidation(value, channelrefNumber, applicants);
+
+    const result = await validatePostalCode();
+    expect(result.message).toEqual('Request failed with status code 500');
+  });
+});
