@@ -3040,3 +3040,107 @@ const Display = (props: KeyWithAnyModel) => {
 export default Display;
 
 
+import { render, screen } from "@testing-library/react";
+import { useDispatch, useSelector } from "react-redux";
+import Display from "./Display";
+import { isFieldUpdate } from "../../../utils/common/change.utils";
+
+// Mock dependencies
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+jest.mock("../../../utils/common/change.utils", () => ({
+  isFieldUpdate: jest.fn(),
+}));
+
+describe("Display Component", () => {
+  const mockDispatch = jest.fn();
+  const mockHandleCallback = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  });
+
+  it("should display the default value when conditions are met", () => {
+    // Mock useSelector to return the necessary state
+    (useSelector as jest.Mock).mockReturnValue([
+      {
+        stageInfo: {
+          application: { journey_type: "NTC" },
+          products: [{ product_category: "CC", product_type: "280" }],
+          applicants: {
+            mailing_address_a_1: "123 Test Street",
+            res_address_a_1: "456 Residential Ave",
+          },
+        },
+      },
+    ]);
+
+    // Render the component
+    render(
+      <Display
+        data={{
+          logical_field_name: "mailing_address",
+          rwb_label_name: "Mailing Address",
+        }}
+        handleCallback={mockHandleCallback}
+      />
+    );
+
+    // Assertions
+    expect(screen.getByText("Mailing Address")).toBeInTheDocument();
+    expect(screen.getByText("123 Test Street")).toBeInTheDocument();
+
+    // Validate dispatch and callback
+    expect(mockDispatch).toHaveBeenCalledWith(
+      isFieldUpdate(
+        { logical_field_name: "mailing_address", rwb_label_name: "Mailing Address" },
+        "123 Test Street",
+        "mailing_address"
+      )
+    );
+    expect(mockHandleCallback).toHaveBeenCalledWith(
+      { logical_field_name: "mailing_address", rwb_label_name: "Mailing Address" },
+      "123 Test Street"
+    );
+  });
+
+  it("should not display anything when no default value is found", () => {
+    // Mock useSelector to return the necessary state
+    (useSelector as jest.Mock).mockReturnValue([
+      {
+        stageInfo: {
+          application: { journey_type: "NTC" },
+          products: [{ product_category: "CC", product_type: "280" }],
+          applicants: {},
+        },
+      },
+    ]);
+
+    // Render the component
+    render(
+      <Display
+        data={{
+          logical_field_name: "mailing_address",
+          rwb_label_name: "Mailing Address",
+        }}
+        handleCallback={mockHandleCallback}
+      />
+    );
+
+    // Assertions
+    expect(screen.queryByText("Mailing Address")).not.toBeInTheDocument();
+    expect(screen.queryByText("123 Test Street")).not.toBeInTheDocument();
+
+    // Validate no dispatch or callback
+    expect(mockDispatch).not.toHaveBeenCalled();
+    expect(mockHandleCallback).toHaveBeenCalledWith(
+      { logical_field_name: "mailing_address", rwb_label_name: "Mailing Address" },
+      undefined
+    );
+  });
+});
+
+
