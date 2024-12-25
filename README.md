@@ -2869,3 +2869,59 @@ describe("Dashboard Testing useLayoufEffect", () => {
   expect(mockNavigate).toHaveBeenCalledWith('sg/super-short-form'); 
 });
 });
+
+import axios from "axios";
+import { postalCodeValidation } from "./path/to/your/postalCodeValidation";
+import { KeyWithAnyModel } from "../../../utils/model/common-model";
+
+// Mock axios
+jest.mock("axios");
+
+describe("postalCodeValidation", () => {
+  const mockResponse = {
+    data: {
+      applicant: {
+        block_a_1: "Block A",
+        building_name_a_1: "Building Name",
+        street_name_a_1: "Street Name"
+      }
+    }
+  };
+
+  const value = "123456";
+  const channelrefNumber = 1;
+  const applicants: KeyWithAnyModel = {};
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should return applicant details on successful validation", async () => {
+    (axios.get as jest.Mock).mockResolvedValue(mockResponse);
+
+    const validatePostalCode = postalCodeValidation(value, channelrefNumber, applicants);
+    const result = await validatePostalCode();
+
+    expect(result).toEqual({
+      block_a_1: "Block A",
+      building_name_a_1: "Building Name",
+      street_name_a_1: "Street Name"
+    });
+    expect(axios.get).toHaveBeenCalledWith(
+      `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}${channelrefNumber}${process.env.REACT_APP_RTOB_SINGPOST}?zipCode=${value}`
+    );
+  });
+
+  it("should handle error on failed validation", async () => {
+    const mockError = new Error("Network Error");
+    (axios.get as jest.Mock).mockRejectedValue(mockError);
+
+    const validatePostalCode = postalCodeValidation(value, channelrefNumber, applicants);
+    const result = await validatePostalCode();
+
+    expect(result).toBe(mockError);
+    expect(axios.get).toHaveBeenCalledWith(
+      `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}${channelrefNumber}${process.env.REACT_APP_RTOB_SINGPOST}?zipCode=${value}`
+    );
+  });
+});
