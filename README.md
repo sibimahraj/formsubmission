@@ -506,3 +506,15 @@ describe("SliderWithCurrency Component", () => {
       33 |   const applicationJourney = useSelector((state: StoreModel) => state.stages.journeyType);
       34 |   const existingCashone =  (productCode === '280' && applicationJourney === 'ETC') ? true : false;
       35 |   let maxeligibleAmt = stageSelector[0].stageInfo.applicants.max_eligible_amount <= 1000 ? true : false;
+
+      SliderWithCurrency Component › should render the currency value in slider-currency
+
+    TypeError: Cannot read properties of undefined (reading 'outstandingAmount')
+
+      39 |       updateLoanAmountSlider(loanTopUpDetails.outstandingAmount);
+      40 |     }
+    > 41 |   }, [loanTopUpDetails.outstandingAmount])
+         |                        ^
+      42 |
+      43 |   useEffect(() => {
+      44 |     const value = getStoreValue();
