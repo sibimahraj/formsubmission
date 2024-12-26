@@ -119,3 +119,15 @@ describe("ThankYouError Component",()=>{
     });
    
     });
+
+     ● ThankYouError Component › renders the ThankYouError Component with the provide data
+
+    TypeError: Cannot read properties of undefined (reading 'doneButton')
+
+      34 |             className="thankyou__continue"
+      35 |           >
+    > 36 |             {thankyou[applicationDetails.thankyouText].doneButton}
+         |                                                        ^
+      37 |           </button>
+      38 |       </div>
+      39 |     </>
