@@ -530,3 +530,119 @@ describe("SliderWithCurrency Component", () => {
   }),
   useDispatch: jest.fn(),
 }));
+
+
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import SliderWithCurrency from "./slider-with-currency";
+
+const mockStore = configureStore([]);
+
+describe("SliderWithCurrency Component", () => {
+  let store;
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              applicants: { max_eligible_amount: 50000, required_annual_income_a_1: "60000" },
+              products: [{ product_type: "280" }],
+            },
+          },
+        ],
+        lastStageId: "bd-3",
+        journeyType: "ETC",
+        userInput: {
+          applicants: {
+            required_annual_income_a_1: "60000",
+            Transfer_amount_a_1: "2000",
+          },
+        },
+      },
+      loanTopUp: { outstandingAmount: "1000", existingLoanTopUp: true, newLoanTopUp: false },
+    });
+  });
+
+  const renderComponent = (props) => {
+    return render(
+      <Provider store={store}>
+        <SliderWithCurrency {...props} />
+      </Provider>
+    );
+  };
+
+  it("should render the slider with the correct label and value", () => {
+    const props = {
+      data: {
+        logical_field_name: "required_loan_amount",
+        rwb_label_name: "Required Loan Amount",
+        info_tooltips: "Yes",
+      },
+      handleCallback: jest.fn(),
+    };
+
+    renderComponent(props);
+
+    expect(screen.getByLabelText(/Required Loan Amount/i)).toBeInTheDocument();
+    expect(screen.getByText(/Maximum eligible loan amount/i)).toBeInTheDocument();
+  });
+
+  it("should display the error message for values below the minimum", () => {
+    const props = {
+      data: {
+        logical_field_name: "required_loan_amount",
+        rwb_label_name: "Required Loan Amount",
+        info_tooltips: "Yes",
+      },
+      handleCallback: jest.fn(),
+    };
+
+    renderComponent(props);
+
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "500" } });
+    fireEvent.blur(input);
+
+    expect(screen.getByText(/The minimum loan amount is SGD 1000/i)).toBeInTheDocument();
+    expect(props.handleCallback).toHaveBeenCalledWith(props.data, "");
+  });
+
+  it("should update the slider value when a valid amount is entered", () => {
+    const props = {
+      data: {
+        logical_field_name: "required_loan_amount",
+        rwb_label_name: "Required Loan Amount",
+        info_tooltips: "Yes",
+      },
+      handleCallback: jest.fn(),
+    };
+
+    renderComponent(props);
+
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "2000" } });
+    fireEvent.blur(input);
+
+    expect(input.value).toBe("2,000"); // Assuming `formateCurrency` formats with commas
+    expect(props.handleCallback).toHaveBeenCalledWith(props.data, "2000");
+  });
+
+  it("should render the tooltip when info_tooltips is 'Yes'", () => {
+    const props = {
+      data: {
+        logical_field_name: "required_loan_amount",
+        rwb_label_name: "Required Loan Amount",
+        info_tooltips: "Yes",
+      },
+      handleCallback: jest.fn(),
+    };
+
+    renderComponent(props);
+
+    expect(screen.getByClass("info-tooltip")).toBeInTheDocument();
+  });
+});
