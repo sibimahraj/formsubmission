@@ -842,3 +842,14 @@ describe("ReviewPage Component", () => {
     expect(updateCheckboxStatus).toHaveBeenCalledWith(true);
   });
 });
+
+
+    Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+
+      170 |     const updateCheckboxStatus = jest.fn();
+      171 |
+    > 172 |     render(
+          |           ^
+      173 |       <Provider store={store}>
+      174 |         <ReviewPage updateCheckboxStatus={updateCheckboxStatus} />
+      175 |       </Provider>
