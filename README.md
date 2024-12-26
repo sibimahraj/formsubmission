@@ -646,3 +646,33 @@ describe("SliderWithCurrency Component", () => {
     expect(screen.getByClass("info-tooltip")).toBeInTheDocument();
   });
 });
+
+● SliderWithCurrency Component › should render the tooltip when info_tooltips is 'Yes'
+
+    TypeError: Cannot read properties of undefined (reading '0')
+
+      29 |   const [error, setError] = useState("");
+      30 |   const loanTopUpDetails = useSelector((state: StoreModel) => state.loanTopUp);
+    > 31 |   const MaxEligibleAmount = stageSelector[0].stageInfo.applicants.max_eligible_amount ? stageSelector[0].stageInfo.applicants.max_eligible_amount : '';
+         |                                          ^
+      32 |   const productCode = stageSelector[0].stageInfo.products[0].product_type;
+      33 |   const applicationJourney = useSelector((state: StoreModel) => state.stages.journeyType);
+      34 |   const existingCashone =  (productCode === '280' && applicationJourney === 'ETC') ? true : false;
+
+      at SliderWithCurrency (src/shared/components/slider-with-currency/slider-with-currency.tsx:31:42)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom.development.js:16305:18)
+      at mountIndeterminateComponent (node_modules/react-dom/cjs/react-dom.development.js:20074:13)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:21587:16)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at recoverFromConcurrentError (node_modules/react-dom/cjs/react-dom.development.js:25850:20)
+      at performConcurrentWorkOnRoot (node_modules/react-dom/cjs/react-dom.development.js:25750:22)
+      at flushActQueue (node_modules/react/cjs/react.development.js:2667:24)
+      at act (node_modules/react/cjs/react.development.js:2582:11)
+      at node_modules/@testing-library/react/dist/act-compat.js:46:25
+      at renderRoot (node_modules/@testing-library/react/dist/pure.js:180:26)
+      at render (node_modules/@testing-library/react/dist/pure.js:266:10)
+      at renderComponent (src/shared/components/slider-with-currency/slider-with-currency.test.tsx:48:18)
+      at Object.renderComponent (src/shared/components/slider-with-currency/slider-with-currency.test.tsx:121:5)
