@@ -426,4 +426,85 @@ describe("rulesUtils Function", () => {
   });
 
   
+}
+
+
+import Rules_ld_1 from './Rules_ld_1';
+import rulesUtils from './rules.utils';
+
+jest.mock('./rules.utils', () => jest.fn());
+
+describe("Rules_ld_1 Function", () => {
+  it("should add fields to hiddenFields based on conditions", () => {
+    const props = {
+      application: {
+        journey_type: 'NTC',
+      },
+    };
+    const _s = {
+      application: {
+        journey_type: 'NTC',
+      },
+    };
+    const allowedTopUP = true;
+    const newLoanTop = false;
+    const maxeligibleAmount = null;
+
+    // Mock the implementation of rulesUtils
+    (rulesUtils as jest.Mock).mockReturnValue("mockedOutput");
+
+    const result = Rules_ld_1(props, _s, allowedTopUP, newLoanTop, maxeligibleAmount);
+
+    expect(rulesUtils).toHaveBeenCalledWith(props, {
+      nonEditable: [],
+      hidden: [
+        [
+          "loan_account_list",
+          "credit_into",
+          "required_annual_income",
+          "reenter_other_bank_account_bt",
+          "other_bank_account_bt",
+          "other_bank_name",
+        ],
+      ],
+    });
+
+    expect(result).toBe("mockedOutput");
+  });
+
+  it("should not add 'required_annual_income' to hiddenFields when maxeligibleAmount is truthy", () => {
+    const props = {
+      application: {
+        journey_type: 'NTC',
+      },
+    };
+    const _s = {
+      application: {
+        journey_type: 'NTC',
+      },
+    };
+    const allowedTopUP = true;
+    const newLoanTop = false;
+    const maxeligibleAmount = 50000;
+
+    // Mock the implementation of rulesUtils
+    (rulesUtils as jest.Mock).mockReturnValue("mockedOutput");
+
+    const result = Rules_ld_1(props, _s, allowedTopUP, newLoanTop, maxeligibleAmount);
+
+    expect(rulesUtils).toHaveBeenCalledWith(props, {
+      nonEditable: [],
+      hidden: [
+        [
+          "loan_account_list",
+          "credit_into",
+          "reenter_other_bank_account_bt",
+          "other_bank_account_bt",
+          "other_bank_name",
+        ],
+      ],
+    });
+
+    expect(result).toBe("mockedOutput");
+  });
 });
