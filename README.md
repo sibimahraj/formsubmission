@@ -874,3 +874,16 @@ describe("ReviewPage Component", () => {
       68 |     }
       69 |
       70 |     // eslint-disable-next-line react-hooks/exhaustive-deps
+
+
+ ● ReviewPage Component › renders the ReviewPage component correctly for PL
+
+    TypeError: Cannot read properties of undefined (reading 'reviewContent1')
+
+      162 |                 </div>
+      163 |                 <div className="review__top__content">
+    > 164 |                   {reviewdata.PL.reviewContent1}
+          |                                  ^
+      165 |                 </div>
+      166 |               </>
+      167 |             )}
