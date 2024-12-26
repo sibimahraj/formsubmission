@@ -231,3 +231,199 @@ describe('Rules_ssf2', () => {
 
       at push (src/modules/rules/rules_ssf-2.ts:70:23)
       at Object.<anonymous> (src/modules/rules/rules_ssf-2.test.ts:64:16)
+
+      import { KeyWithAnyModel, ValidationObjModel } from '../../utils/model/common-model';
+import rulesUtils from './rules.utils';
+
+const Rules_ld_1 = (props: KeyWithAnyModel, _s: KeyWithAnyModel,allowedTopUP: any,newLoanTop: any,maxeligibleAmount: any): KeyWithAnyModel => {
+    const validationObj: ValidationObjModel = {
+        nonEditable: [],
+        hidden: []
+    };
+    let hiddenFields: Array<string> = [];
+    if(_s.application.journey_type === 'NTC'){
+        hiddenFields.push("loan_account_list","credit_into"); 
+    }
+    if(newLoanTop){
+        hiddenFields.push("loan_account_list"); 
+    }
+    if((allowedTopUP || newLoanTop) && !maxeligibleAmount){
+    hiddenFields.push("required_annual_income");
+    }
+    hiddenFields.push("reenter_other_bank_account_bt","other_bank_account_bt","other_bank_name");
+    validationObj.hidden!.push(hiddenFields);
+    return rulesUtils(props, validationObj);
+}
+
+export default Rules_ld_1;
+
+import rulesUtils from "./rules.utils"; // Adjust the import path
+import { FieldsetModel, KeyWithAnyModel } from "../../utils/model/common-model";
+
+describe("rulesUtils Function", () => {
+  it("should correctly modify visibility based on validationObj.modifyVisibility", () => {
+    const props: KeyWithAnyModel = [
+      [
+        {
+          fields: [
+            { logical_field_name: "field1", default_visibility: "No" },
+            { logical_field_name: "field2", default_visibility: "Yes" },
+          ],
+        },
+      ],
+    ];
+    const validationObj = {
+      modifyVisibility: [["field1"]],
+      hidden: [],
+      fieldSetNameChange: [],
+      nonEditable: [[]],
+    };
+
+    const result = rulesUtils(props, validationObj);
+    expect(result.fields).not.toBeNull;
+  });
+
+  it("should hide fields based on validationObj.hidden", () => {
+    const props: KeyWithAnyModel = [
+      [
+        {
+          fields: [
+            { logical_field_name: "field1", default_visibility: "Yes" },
+            { logical_field_name: "field2", default_visibility: "Yes" },
+          ],
+        },
+      ],
+    ];
+    const validationObj = {
+      modifyVisibility: [],
+      hidden: ["field1"],
+      fieldSetNameChange: [],
+      nonEditable: [[]],
+    };
+
+    const result = rulesUtils(props, validationObj);
+
+    expect(result.fields).not.toBeNull;
+  });
+
+  it("should handle fieldSetNameChange correctly", () => {
+    const props: KeyWithAnyModel = [[
+        {
+            "field_set_name": "Basic Information",
+            "fields": [
+                {
+                    "logical_field_name": "full_name",
+                    "default_visibility": null, 
+                },
+                { 
+                    "logical_field_name": "first_name",
+                    "default_visibility": null,
+                    "lov_field_name": "First name",
+                   
+                },   
+            ]
+        }
+    ]];
+    const validationObj = {
+      modifyVisibility: [["full_name"]],
+      hidden: [],
+      fieldSetNameChange: [["full_name"]],
+      nonEditable: [[]],
+    };
+
+    const result = rulesUtils(props, validationObj);
+
+    expect(result).toEqual([{"field_set_name": "Basic Information", "fields": [{"default_visibility": null, "editable": false, "logical_field_name": "full_name"}, {"default_visibility": null, "editable": false, "logical_field_name": "first_name", "lov_field_name": "First name"}]}]);
+  });
+
+  it("should mark fields as editable based on validationObj.nonEditable", () => {
+    const props: KeyWithAnyModel = [
+      [
+        {
+          fields: [
+            { logical_field_name: "field1", default_visibility: "Yes" },
+          ],
+        },
+      ],
+    ];
+    const validationObj = {
+      modifyVisibility: [],
+      hidden: [],
+      fieldSetNameChange: [],
+      nonEditable: [["field1"]],
+    };
+
+    const result = rulesUtils(props, validationObj);
+
+    expect(result).toEqual([{"fields": [{"default_visibility": "Yes", "editable": true, "logical_field_name": "field1"}]}]);
+  });
+
+  it("should return only visible fields and filter out hidden ones", () => {
+    const props: KeyWithAnyModel = [
+      [
+        {
+          fields: [
+            { logical_field_name: "field1", default_visibility: "No" },
+            { logical_field_name: "field2", default_visibility: "Yes" },
+            { logical_field_name: "field3", default_visibility: "No" },
+          ],
+        },
+      ],
+    ];
+    const validationObj = {
+      modifyVisibility: [],
+      hidden: ["field3"],
+      fieldSetNameChange: [],
+      nonEditable: [[]],
+    };
+
+    const result = rulesUtils(props, validationObj);
+
+    expect(result).toEqual([{"fields": [{"default_visibility": "Yes", "editable": false, "logical_field_name": "field2"}]}]);
+  });
+
+  it("should handle empty props and validationObj gracefully", () => {
+    const props: KeyWithAnyModel = [];
+    const validationObj = {
+      modifyVisibility: [],
+      hidden: [],
+      fieldSetNameChange: [],
+      nonEditable: [[]],
+    };
+
+    const result = rulesUtils(props, validationObj);
+
+    expect(result).toEqual(undefined);
+  });
+
+  it("should handle nested data with multiple fields", () => {
+    const props: KeyWithAnyModel = [
+      [
+        {
+          fields: [
+            { logical_field_name: "field1", default_visibility: "No" },
+            { logical_field_name: "field2", default_visibility: "Yes" },
+          ],
+        },
+        {
+          fields: [
+            { logical_field_name: "field3", default_visibility: "Yes" },
+            { logical_field_name: "field4", default_visibility: "No" },
+          ],
+        },
+      ],
+    ];
+    const validationObj = {
+      modifyVisibility: [["field1", "field4"]],
+      hidden: ["field3"],
+      fieldSetNameChange: [["field4"]],
+      nonEditable: [["field2"]],
+    };
+
+    const result = rulesUtils(props, validationObj);
+
+    expect(result).toEqual([{"fields": [{"default_visibility": "Yes", "editable": false, "logical_field_name": "field1"}, {"default_visibility": "Yes", "editable": true, "logical_field_name": "field2"}]}, {"fields": [{"default_visibility": "Yes", "editable": false, "logical_field_name": "field4"}]}]);
+  });
+
+  
+});
