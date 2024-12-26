@@ -645,3 +645,200 @@ describe("ReviewPage Component", () => {
     expect(updateCheckboxStatus).toHaveBeenCalledWith(true);
   });
 });
+
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import thunk from "redux-thunk";
+import ReviewPage from "./review-page";
+
+// Mock dependencies
+const mockDispatch = jest.fn();
+jest.mock("react-redux", () => ({
+  useDispatch: () => mockDispatch,
+  useSelector: jest.fn(),
+}));
+
+jest.mock("../../../utils/common/change.utils", () => ({
+  authenticateType: jest.fn(() => "manual"),
+}));
+
+jest.mock("../../../services/common-service", () => ({
+  dispatchLoader: jest.fn(),
+  getProductCategory: jest.fn(() => "CA"),
+}));
+
+jest.mock("../../../shared/components/checkbox/checkbox", () => (props: any) => (
+  <div>
+    <div>Checkbox Mock</div>
+    <input
+      type="checkbox"
+      checked={props.checkedStatus}
+      onChange={() => props.setCheckedStatus(!props.checkedStatus)}
+    />
+  </div>
+));
+
+jest.mock("../../../shared/components/model/tooltip-model", () => (props: any) => (
+  <div>
+    <div>TooltipModel Mock</div>
+    <button onClick={() => props.setIsTooltipOpen(false)}>Close Tooltip</button>
+  </div>
+));
+
+jest.mock("../../../assets/_json/review.json", () => ({
+  confirm: {
+    reviewPageHeader1: "Review Page Header",
+    reviewDesc: "Confirm Description",
+    reviewDesc_1: "Confirm Description 1",
+    reviewDesc_2: "Confirm Description 2",
+    reviewDesc_3: "Confirm Description 3",
+    reviewDesc_4: "Confirm Description 4",
+    reviewDesc_5: "Confirm Description 5",
+    reviewDesc_6: "Confirm Description 6",
+    reviewDesc_7: "Confirm Description 7",
+  },
+  manual: {
+    header: "Manual Header",
+    reviewDesc_1: "Manual Description 1",
+    reviewMyInfoDesc_1: "MyInfo Description 1",
+    reviewMyInfoDesc_2: "MyInfo Description 2",
+    reviewMyInfoDesc_3: "MyInfo Description 3",
+    reviewMyInfoDesc_4: "MyInfo Description 4",
+    reviewMyInfoDesc_5: "MyInfo Description 5",
+    reviewMyInfoDesc_6: "MyInfo Description 6",
+  },
+  PLLinks: {
+    contentStart: "PL Content Start",
+    contentLink: {
+      link1: { path: "http://example.com", name: "Example Link" },
+    },
+  },
+  CCPLReviewContent: {
+    contentLinkDescp: "Content Link Description",
+    contentHeading: "Content Heading",
+    contentStart: "Content Start",
+    contentEnd: "Content End",
+  },
+  CCPL: {
+    reviewTitle1: "Review Title",
+    reviewHeader: "Review Header",
+    reviewDescp1: "Review Description 1",
+    reviewDescpoint1: "Description Point 1",
+    reviewDescpoint2: "Description Point 2",
+    reviewDescp2: "Review Description 2",
+    reviewDescp3: "Review Description 3",
+    reviewDescp4: "Review Description 4",
+  },
+}));
+
+describe("ReviewPage Component", () => {
+  const mockStore = configureStore([thunk]);
+  let store;
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              products: [{ name: "Product Name", product_type: "601" }],
+            },
+          },
+        ],
+        userInput: { applicants: {} },
+      },
+    });
+
+    // Mock `useSelector` implementation
+    jest.requireMock("react-redux").useSelector.mockImplementation((callback) =>
+      callback({
+        stages: {
+          stages: [
+            {
+              stageInfo: {
+                products: [{ name: "Product Name", product_type: "601" }],
+              },
+            },
+          ],
+          userInput: { applicants: {} },
+        },
+      })
+    );
+  });
+
+  it("renders the ReviewPage component correctly for CASA", () => {
+    const updateCheckboxStatus = jest.fn();
+
+    render(
+      <Provider store={store}>
+        <ReviewPage updateCheckboxStatus={updateCheckboxStatus} />
+      </Provider>
+    );
+
+    expect(screen.getByText("Review Page Header")).toBeInTheDocument();
+    expect(screen.getByText("Manual Header")).toBeInTheDocument();
+    expect(screen.getByText("Confirm Description")).toBeInTheDocument();
+  });
+
+  it("renders the ReviewPage component correctly for PL", () => {
+    jest.requireMock("../../../services/common-service").getProductCategory.mockReturnValue("PL");
+
+    const updateCheckboxStatus = jest.fn();
+
+    render(
+      <Provider store={store}>
+        <ReviewPage updateCheckboxStatus={updateCheckboxStatus} />
+      </Provider>
+    );
+
+    expect(screen.getByText("PL Content Start")).toBeInTheDocument();
+    expect(screen.getByText("Example Link")).toBeInTheDocument();
+  });
+
+  it("renders tooltip when clicked on tooltip icon", () => {
+    jest.requireMock("../../../services/common-service").getProductCategory.mockReturnValue("CC");
+
+    const updateCheckboxStatus = jest.fn();
+
+    render(
+      <Provider store={store}>
+        <ReviewPage updateCheckboxStatus={updateCheckboxStatus} />
+      </Provider>
+    );
+
+    expect(screen.getByText("TooltipModel Mock")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Close Tooltip"));
+    expect(screen.queryByText("TooltipModel Mock")).not.toBeInTheDocument();
+  });
+
+  it("checkbox toggles correctly", () => {
+    const updateCheckboxStatus = jest.fn();
+
+    render(
+      <Provider store={store}>
+        <ReviewPage updateCheckboxStatus={updateCheckboxStatus} />
+      </Provider>
+    );
+
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox).not.toBeChecked();
+
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+  });
+
+  it("calls updateCheckboxStatus correctly based on isChecked and isHideTooltipIcon", () => {
+    const updateCheckboxStatus = jest.fn();
+
+    render(
+      <Provider store={store}>
+        <ReviewPage updateCheckboxStatus={updateCheckboxStatus} />
+      </Provider>
+    );
+
+    expect(updateCheckboxStatus).toHaveBeenCalledWith(true);
+  });
+});
