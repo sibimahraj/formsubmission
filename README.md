@@ -382,3 +382,89 @@ describe("ReviewPage Component", () => {
     expect(checkbox).toBeChecked();
   });
 });
+
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { useDispatch, useSelector } from "react-redux";
+import ReviewPage from "./review-page";
+import reviewpageData from "../../../assets/_json/review.json";
+import { dispatchLoader, getProductCategory } from "../../../services/common-service";
+
+// Mock Redux hooks and external modules
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+jest.mock("../../../services/common-service", () => ({
+  dispatchLoader: jest.fn(),
+  getProductCategory: jest.fn(),
+}));
+
+jest.mock("../../../shared/components/checkbox/checkbox", () => jest.fn((props) => (
+  <div data-testid="checkbox" onClick={() => props.setCheckedStatus(!props.checkedStatus)}>
+    Checkbox
+  </div>
+)));
+
+describe("ReviewPage Component", () => {
+  let mockDispatch: jest.Mock;
+  const mockStageSelector = [
+    {
+      stageInfo: {
+        products: [
+          {
+            name: "Test Product",
+          },
+        ],
+      },
+    },
+  ];
+
+  beforeEach(() => {
+    // Reset mocks
+    mockDispatch = jest.fn();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    (useSelector as jest.Mock).mockReturnValue(mockStageSelector);
+    (getProductCategory as jest.Mock).mockReturnValue("CC");
+
+    jest.clearAllMocks();
+  });
+
+  it("should render ReviewPage with CCPL content", () => {
+    render(<ReviewPage />);
+
+    // Check CCPL content is rendered
+    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
+    
+
+    // Verify loader dispatch
+    expect(dispatchLoader).toHaveBeenCalledWith(false);
+  });
+
+  
+
+  it("should set product details and product category on mount", () => {
+    render(<ReviewPage />);
+
+   expect(getProductCategory).toHaveBeenCalledWith(mockStageSelector[0].stageInfo.products);
+                          
+    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
+  });
+
+ 
+it("should filter and render dynamic links for CCPL content", () => {
+    render(<ReviewPage />);
+    const links = reviewpageData.CCPLReviewContent.contentLink;
+    Object.entries(links).forEach(([key, value]) => {
+      expect(screen.getByText(/Customer Terms/)).toBeInTheDocument();
+    });
+  });
+it("should handle dispatch call when component mounts", () => {
+    render(<ReviewPage />);
+
+    // Verify dispatch call for loader
+    expect(mockDispatch).toHaveBeenCalledWith(undefined);
+  });
+
+ });
