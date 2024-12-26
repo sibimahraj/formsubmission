@@ -864,3 +864,13 @@ describe("ReviewPage Component", () => {
       53 |       (link: KeyWithAnyModel) => {
       54 |         return link;
       55 |       }
+
+       TypeError: props.updateCheckboxStatus is not a function
+
+      65 |     }
+      66 |     else {
+    > 67 |       props.updateCheckboxStatus(isChecked);
+         |             ^
+      68 |     }
+      69 |
+      70 |     // eslint-disable-next-line react-hooks/exhaustive-deps
