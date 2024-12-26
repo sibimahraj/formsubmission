@@ -853,3 +853,14 @@ describe("ReviewPage Component", () => {
       173 |       <Provider store={store}>
       174 |         <ReviewPage updateCheckboxStatus={updateCheckboxStatus} />
       175 |       </Provider>
+
+      TypeError: Cannot convert undefined or null to object
+        at Function.entries (<anonymous>)
+
+      50 |     let reviewLinks =
+      51 |       productCtg === "PL" ? reviewdata.PLLinks : reviewdata.CCPLReviewContent;
+    > 52 |     const fliteredLink: any = Object.entries(reviewLinks.contentLink).filter(
+         |                                      ^
+      53 |       (link: KeyWithAnyModel) => {
+      54 |         return link;
+      55 |       }
