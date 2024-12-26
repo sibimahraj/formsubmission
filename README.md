@@ -1,121 +1,121 @@
 import "./thank-you.scss";
 import { KeyWithAnyModel } from "../../../utils/model/common-model";
-import ThankYouTimeline from "./thankyou-timeline";
 import ThankYouBanner from "./thankyou-banner";
-import ThankYouSurvey from "./thankyou-survey";
 
-const CCActivationSucess = (props: KeyWithAnyModel) => {
+const ThankyouError = (props: KeyWithAnyModel) => {
   const applicationDetails = props.applicationDetails;
   const thankyou = props.thankyou;
   return (
     <>
       <ThankYouBanner
-        banner_header={thankyou.CCActivation.banner.banner_header}
+        banner_header={thankyou.CCPL.error.banner_header}
         banner_content={false}
       />
       <div className="thankyou__body__outer">
         <div className="thankyou__body">
-          <div className="thankyou__title">
-            {thankyou.CCActivation.header}
-          </div>
-          <div className="thankyou__title">
-            <div>{applicationDetails.productName}</div>
-            <div>
-              <label>{applicationDetails.cardNumber}</label>
-            </div>
-          </div>
-          <ThankYouTimeline
-            title={thankyou.CCActivation.timeline_header}
-            data={thankyou.CCActivation.successTimeLine}
-            checkCompletedStatus={true}
-          />
-          <ThankYouSurvey/>
+          <div className="thankyou__title">{thankyou.CCPL.error.title}</div>
           <div className="body__notes">
             <div className="body__notes__desc">
-              {thankyou.CCActivation.successNote}
-             </div> 
-          </div>                
-          <div className="body__app-details">
-            <label>{thankyou.CCPL.refId_lbl}</label>
-            {props.applicationReferenceNo!}
-          </div>
-          <div className="body__refno">
-            <button
-              onClick={(e) => props.goToIBanking(e)}
-              className="thankyou__continue"
-            >
-              {thankyou[applicationDetails.thankyouText].iBankingButton}
-            </button>
+              <div>{thankyou.CCPL.error.content_1}</div>
+              <div>{thankyou.CCPL.error.content_2}</div>
+              {applicationDetails.errorID && (
+                <div>
+                  <label>{thankyou.CCPL.error.error_id_lbl}</label>{" "}
+                  {applicationDetails.errorID}
+                </div>
+              )}
+            </div>
           </div>
         </div>
+      </div>
+      <div className="body__refno">
+          <button
+            onClick={(e) => props.goToIBanking(e)}
+            className="thankyou__continue"
+          >
+            {thankyou[applicationDetails.thankyouText].doneButton}
+          </button>
       </div>
     </>
   );
 };
 
-export default CCActivationSucess;
+export default ThankyouError;
 
 import React from "react";
-import {render, screen} from "@testing-library/react"
+import {render , screen, fireEvent} from "@testing-library/react"
 import { shallow } from "enzyme";
-import CCActivationSucess from "./cc-activation-success";
-import ThankYouBanner from "./thankyou-banner";
-import ThankYouTimeline from "./thankyou-timeline";
-import ThankYouSurvey from "./thankyou-survey";
- 
- 
-jest.mock("./thankyou-banner", ()=>jest.fn(()=><div data-testid="thank-you-banner"/>));
-jest.mock("./thankyou-banner", ()=>jest.fn(()=><div data-testid="thank-you-timeline"/>));
-jest.mock("./thankyou-banner", ()=>jest.fn(()=><div data-testid="thank-you-survey"/>));
- 
-describe("CCActivationSuccess Component",()=>{
-    let wrapper: any;
-    beforeAll(()=>{
-        wrapper= shallow(<CCActivationSucess {...defaultProps}/>);
-    });
-    const defaultProps ={
-        applicationDetails:{
-            productName:"Credit Card",
-            cardNumber:"1234 5678 9876 5432",
-        },
-        thankyou:{
-            CCActivation:{
-                banner:{
-                    banner_header:"Activation Successful!",
-                },
-                header:"Congratulations on your new card!",
-                timeline_header: "Activation Timeline",
-                successTimeline:[
-                    {step:"Application Submitted",completed:true},
-                    {step:"Verification completed",completed:true},
-                    {step:"Card Activated",completed:true},
-                ],
-                successNote:"Your card is now ready to use.",
-            },
-            CCPL:{
-                refId_lbl:"1212323"
-            }
-        },
-    };
-
-
-    it("render the ThankYouBanner component with correct props",()=>{
-        expect(wrapper).toHaveLength(1);
-    });
+import ThankyouError from "./thankyou-error";
+jest.mock("@lottiefiles/react-lottie-player",()=>({
+    Player:jest.fn(()=><div data-testid="mock-lottie-player"></div>)
+  }));
   
+
+describe("ThankYouError Component",()=>{
+    it("renders the ThankYouError Component with the provide data", ()=>{
+        const mockProps ={
+            applicationDetails:{
+                errorID: "12345",
+                thankyouText: {
+                    doneButton:"Go to Banking",
+                },
+            },
+            thankyou:{
+                CCPL:{
+                    error:{
+                        banner_header: 'Error Header',
+                        title: 'Error Title',
+                        content_1: "Content 1",
+                        content_2: "Content 2",
+                        error_id_lbl: "Error ID"
+                    },
+                },
+            },
+            goToBanking:jest.fn(),
+        };
+        let wrapper = shallow(<ThankyouError{...mockProps}/>);
+        expect(wrapper).toHaveLength(1);
    
-});
-
-
-CCActivationSuccess Component › render the ThankYouBanner component with correct props
-
-    TypeError: Cannot read properties of undefined (reading 'iBankingButton')
-
-      45 |               className="thankyou__continue"
-      46 |             >
-    > 47 |               {thankyou[applicationDetails.thankyouText].iBankingButton}
-         |                                                          ^
-      48 |             </button>
-      49 |           </div>
-      50 |         </div>
-
+    });
+    it("renders the ThankYouError Component with the provide data", ()=>{
+        const mockProps ={
+            applicationDetails:{
+                errorID: "12345",
+                thankyouText: {
+                    doneButton:"Go to Banking",
+                },
+                isStp:undefined,
+                thankProp:"applicationDetails"
+            },
+            thankyou:{
+                applicationDetails:{
+                    CCPL:{
+                        timeLine:"",
+                        banner_header:""
+                    },
+                    thankyouProp:{
+                        CCPL:{
+                            timeLine:""
+                        }
+                    },
+                    isStp:false,
+                    
+                },
+                CCPL:{
+                    error:{
+                        banner_header: 'Error Header',
+                        title: 'Error Title',
+                        content_1: "Content 1",
+                        content_2: "Content 2",
+                        error_id_lbl: "Error ID"
+                    },
+                },
+            },
+            goToBanking:jest.fn(),
+        };
+        let wrapper = shallow(<ThankyouError applicationDetails={mockProps.applicationDetails} thankyou={mockProps.thankyou}/>);
+        expect(wrapper).toHaveLength(1);
+   
+    });
+   
+    });
