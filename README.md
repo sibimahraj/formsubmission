@@ -106,3 +106,16 @@ describe("CCActivationSuccess Component",()=>{
    
 });
 
+
+CCActivationSuccess Component › render the ThankYouBanner component with correct props
+
+    TypeError: Cannot read properties of undefined (reading 'iBankingButton')
+
+      45 |               className="thankyou__continue"
+      46 |             >
+    > 47 |               {thankyou[applicationDetails.thankyouText].iBankingButton}
+         |                                                          ^
+      48 |             </button>
+      49 |           </div>
+      50 |         </div>
+
