@@ -518,3 +518,15 @@ describe("SliderWithCurrency Component", () => {
       42 |
       43 |   useEffect(() => {
       44 |     const value = getStoreValue();
+
+      jest.mock('react-redux', () => ({
+  useSelector: jest.fn((selector) => {
+    if (selector.name === 'loanTopUpDetailsSelector') {
+      return {
+        outstandingAmount: 2000, // Mocked value for the test
+      };
+    }
+    return {};
+  }),
+  useDispatch: jest.fn(),
+}));
