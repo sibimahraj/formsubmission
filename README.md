@@ -271,3 +271,14 @@ describe("ThankYouCASA Component", () => {
     expect(screen.getByText("Thank You Header")).toBeInTheDocument();
   });
 });
+
+
+ Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+
+       97 |
+       98 |   it("renders ThankYouCASA component for non-STP flow", () => {
+    >  99 |     render(
+          |           ^
+      100 |       <Provider store={store}>
+      101 |         <ThankYouCASA {...mockProps} />
+      102 |       </Provider>
