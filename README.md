@@ -361,3 +361,127 @@ const ThankYou = () => {
 };
 
 export default ThankYou;
+
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import { MemoryRouter } from "react-router-dom";
+import ThankYou from "./thankyou";
+import { store } from "../../../utils/store/store";
+
+// Mock dependencies
+jest.mock("../../../utils/common/change.utils", () => ({
+  getUrl: {
+    getChannelRefNo: jest.fn(() => ({ applicationRefNo: "12345" })),
+    getParameterByName: jest.fn(() => "upload"),
+    getUpdatedStage: jest.fn(() => ({ ccplChannel: "MBNK" })),
+  },
+}));
+
+jest.mock("../../../services/track-events", () => ({
+  triggerAdobeEvent: jest.fn(),
+}));
+
+jest.mock("../../../services/ga-track-events", () => ({
+  pageView: jest.fn(),
+}));
+
+describe("ThankYou Component", () => {
+  it("renders the ThankYou component with default state", () => {
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <ThankYou />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    // Check if the form is rendered
+    expect(screen.getByRole("form")).toBeInTheDocument();
+
+    // Check default text (e.g., from ThankYouUpload or other components)
+    expect(
+      screen.getByText("Default upload text or fallback message")
+    ).toBeInTheDocument();
+  });
+
+  it("calls setApplicationDetails when stageSelector data is available", () => {
+    // Mock stageSelector data
+    const mockStageSelector = [
+      {
+        stageInfo: {
+          products: [
+            {
+              product_category: "CC",
+              name: "Credit Card",
+              acct_details: [{ account_number: "1234", card_no: "5678" }],
+            },
+          ],
+        },
+      },
+    ];
+    store.getState().stages.stages = mockStageSelector;
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <ThankYou />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    // Check updated state values
+    expect(screen.getByText("Credit Card")).toBeInTheDocument();
+    expect(screen.getByText("5678")).toBeInTheDocument();
+  });
+
+  it("triggers activateCard when otpSuccessSelector is true", () => {
+    store.getState().stages.otpSuccess = true;
+    const mockActivateCard = jest.fn();
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <ThankYou />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    // Check if activateCard was called
+    expect(mockActivateCard).toHaveBeenCalled();
+  });
+
+  it("shows ThankYouCASA component for productCategory 'CA'", () => {
+    store.getState().stages.stages = [
+      {
+        stageInfo: {
+          products: [{ product_category: "CA", name: "Savings Account" }],
+        },
+      },
+    ];
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <ThankYou />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(screen.getByText("Savings Account")).toBeInTheDocument();
+  });
+
+  it("handles form submission correctly", () => {
+    const { getByRole } = render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <ThankYou />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    const form = getByRole("form");
+    fireEvent.submit(form);
+
+    // Verify form redirection logic (mocked URL redirection)
+    expect(window.location.href).toContain(process.env.REACT_APP_HOME_PAGE_URL);
+  });
+});
