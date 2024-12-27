@@ -216,3 +216,197 @@ describe('Alias Component', () => {
     expect(mockGetFields).toHaveBeenCalled();
   });
 });
+
+import { render, screen, fireEvent } from "@testing-library/react";
+import { useDispatch, useSelector } from "react-redux";
+import Alias from "./alias";
+import { getFields } from "./alias.utils";
+import React from "react";
+
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+jest.mock("./alias.utils", () => ({
+  getFields: jest.fn(),
+}));
+
+describe("Alias Component", () => {
+  const mockDispatch = jest.fn();
+  const mockGetFields = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    jest.spyOn(React, "useState").mockImplementationOnce(() => [[], jest.fn()]);
+    (getFields as jest.Mock).mockImplementation(mockGetFields);
+  });
+
+  const mockSelectors = (alias, stages, journeyType = true) => {
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return stages;
+      }
+      if (selectorFn.toString().includes("state.alias")) {
+        return alias;
+      }
+      if (selectorFn.toString().includes("state.stages.journeyType")) {
+        return journeyType;
+      }
+      return null;
+    });
+  };
+
+  it("should call getFields on initial render with 'get' action", () => {
+    mockSelectors(
+      {
+        count: 1,
+        fields: ["alias_1"],
+        maxCount: 4,
+      },
+      [{ stageId: "bd-2", stageInfo: { application: { source_system_name: 3 } } }]
+    );
+
+    render(
+      <Alias
+        handleCallback={jest.fn()}
+        handleFieldDispatch={jest.fn()}
+        value={{}}
+      />
+    );
+
+    expect(mockDispatch).toHaveBeenCalled();
+    expect(mockGetFields).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      "get"
+    );
+  });
+
+  it("should render fields returned by getFields", () => {
+    mockSelectors(
+      {
+        count: 1,
+        fields: ["alias_1"],
+        maxCount: 4,
+      },
+      [{ stageId: "bd-2", stageInfo: { application: { source_system_name: 3 } } }]
+    );
+
+    jest.spyOn(React, "useState").mockImplementationOnce(() => [
+      [
+        {
+          logical_field_name: "alias_1",
+          component_type: "Text",
+          rwb_label_name: "Alias Label",
+        },
+      ],
+      jest.fn(),
+    ]);
+
+    render(
+      <Alias
+        handleCallback={jest.fn()}
+        handleFieldDispatch={jest.fn()}
+        value={{}}
+      />
+    );
+
+    expect(screen.getByText("Alias Label")).toBeInTheDocument();
+  });
+
+  it("should handle button click and call getFields with 'add' action", () => {
+    mockSelectors(
+      {
+        count: 1,
+        fields: ["alias_1"],
+        maxCount: 4,
+      },
+      [{ stageId: "bd-2", stageInfo: { application: { source_system_name: 3 } } }]
+    );
+
+    render(
+      <Alias
+        handleCallback={jest.fn()}
+        handleFieldDispatch={jest.fn()}
+        value={{}}
+      />
+    );
+
+    const addButton = screen.getByPlaceholderText("Enter alias");
+    fireEvent.click(addButton);
+
+    expect(mockDispatch).toHaveBeenCalled();
+    expect(mockGetFields).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      "add"
+    );
+  });
+
+  it("should render hide button when count exceeds maxCount", () => {
+    mockSelectors(
+      {
+        count: 5,
+        fields: ["alias_1"],
+        maxCount: 4,
+      },
+      [{ stageId: "bd-2", stageInfo: { application: { source_system_name: 3 } } }]
+    );
+
+    render(
+      <Alias
+        handleCallback={jest.fn()}
+        handleFieldDispatch={jest.fn()}
+        value={{}}
+      />
+    );
+
+    expect(screen.getByPlaceholderText("Enter alias")).toHaveClass("hide-btn");
+  });
+
+  it("should not render button when journeyType is true", () => {
+    mockSelectors(
+      {
+        count: 1,
+        fields: ["alias_1"],
+        maxCount: 4,
+      },
+      [{ stageId: "bd-2", stageInfo: { application: { source_system_name: 3 } } }],
+      true
+    );
+
+    render(
+      <Alias
+        handleCallback={jest.fn()}
+        handleFieldDispatch={jest.fn()}
+        value={{}}
+      />
+    );
+
+    expect(screen.queryByPlaceholderText("Enter alias")).toBeNull();
+  });
+
+  it("should render button when journeyType is false", () => {
+    mockSelectors(
+      {
+        count: 1,
+        fields: ["alias_1"],
+        maxCount: 4,
+      },
+      [{ stageId: "bd-2", stageInfo: { application: { source_system_name: 3 } } }],
+      false
+    );
+
+    render(
+      <Alias
+        handleCallback={jest.fn()}
+        handleFieldDispatch={jest.fn()}
+        value={{}}
+      />
+    );
+
+    expect(screen.getByPlaceholderText("Enter alias")).toBeInTheDocument();
+  });
+});
