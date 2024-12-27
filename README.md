@@ -179,3 +179,13 @@ describe("ThankYou Component", () => {
     expect(button).toBeInTheDocument();
   });
 });
+
+TypeError: Cannot read properties of undefined (reading 'stages')
+
+      27 |   const dispatch = useDispatch();
+      28 |   /*istanbul ignore next */
+    > 29 |   const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+         |                                                                         ^
+      30 |   const applicationJourney = useSelector(
+      31 |     (state: StoreModel) => state.stages.journeyType
+      32 |   );
