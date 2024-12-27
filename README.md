@@ -90,3 +90,92 @@ describe("ThankYouPL Component", () => {
 
  
 });
+
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import ThankYou from "./thank-you"; // Importing your ThankYou component
+
+const mockStore = configureStore([]);
+
+describe("ThankYou Component", () => {
+  let store;
+  const mockProps = {
+    enableActivation: true,
+    isCampaignBenefits: false,
+    showPlatinum: true,
+    applicationReferenceNo: "APP98765",
+  };
+
+  beforeEach(() => {
+    store = mockStore({
+      stage: {
+        currentStage: "ThankYou",
+      },
+      store: {
+        thankyouDetails: {
+          applicationDetails: {
+            isStp: false,
+          },
+        },
+      },
+    });
+  });
+
+  it("renders ThankYou component correctly with non-STP flow", () => {
+    render(
+      <Provider store={store}>
+        <ThankYou {...mockProps} />
+      </Provider>
+    );
+
+    // Check if application reference number is displayed
+    expect(screen.getByText(/APP98765/)).toBeInTheDocument();
+
+    // Check for other static texts or elements unique to the ThankYou component
+    expect(screen.getByText("Mocked Timeline")).toBeInTheDocument();
+    expect(screen.getByText("Mocked Banner")).toBeInTheDocument();
+    expect(screen.getByText("Mocked Survey")).toBeInTheDocument();
+  });
+
+  it("renders ThankYou component with STP flow", () => {
+    const stpStore = mockStore({
+      stage: {
+        currentStage: "ThankYou",
+      },
+      store: {
+        thankyouDetails: {
+          applicationDetails: {
+            isStp: true,
+          },
+        },
+      },
+    });
+
+    render(
+      <Provider store={stpStore}>
+        <ThankYou {...mockProps} />
+      </Provider>
+    );
+
+    // Verify STP flow renders specific elements
+    expect(screen.getByText(/APP98765/)).toBeInTheDocument();
+    expect(screen.getByText("Mocked Timeline")).toBeInTheDocument();
+    expect(screen.getByText("Mocked Banner")).toBeInTheDocument();
+  });
+
+  it("handles button click to proceed", () => {
+    render(
+      <Provider store={store}>
+        <ThankYou {...mockProps} />
+      </Provider>
+    );
+
+    const button = screen.getByRole("button", { name: /Proceed/i });
+    fireEvent.click(button);
+
+    // Mock the button action (You can add more specific assertions depending on what the button does)
+    expect(button).toBeInTheDocument();
+  });
+});
