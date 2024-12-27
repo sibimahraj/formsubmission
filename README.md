@@ -457,3 +457,13 @@ it('renders the button when journeyType is false', () => {
   expect(button).toBeInTheDocument();
   expect(button.className).toContain("show-btn"); // Ensure the button is shown
 });
+
+ TypeError: undefined is not iterable (cannot read property Symbol(Symbol.iterator))
+
+      20 |
+      21 |   const dispatch = useDispatch();
+    > 22 |   const [field, setField] = useState([]);
+         |                             ^
+      23 |   const addNewAliasName = () => {
+      24 |     const stageComponents = dispatch(
+      25 |         getFields(stageSelector, aliasSelector, "add")
