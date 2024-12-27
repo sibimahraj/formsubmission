@@ -316,3 +316,13 @@ describe("ThankYouPL Component", () => {
     expect(mockProps.submitForm).toHaveBeenCalledTimes(1);
   });
 });
+
+ TypeError: Cannot read properties of undefined (reading 'timeLine')
+
+      152 |           )}
+      153 |           <ThankYouTimeline
+    > 154 |             title={thankyou[applicationDetails.thankyouText].timeLine}
+          |                                                              ^
+      155 |             data={getTimelineData()}
+      156 |             checkCompletedStatus={true}
+      157 |           />
