@@ -410,3 +410,50 @@ describe("Alias Component", () => {
     expect(screen.getByPlaceholderText("Enter alias")).toBeInTheDocument();
   });
 });
+
+it('renders the button when journeyType is false', () => {
+  (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+    if (selectorFn.toString().includes('state.stages.stages')) {
+      return [
+        {
+          stageId: "bd-2",
+          stageInfo: {
+            application: {
+              source_system_name: 3,
+            },
+          },
+        },
+      ];
+    }
+    if (selectorFn.toString().includes('state.alias')) {
+      return {
+        count: 1,
+        fields: ['alias_1'],
+        maxCount: 4,
+      };
+    }
+    if (selectorFn.toString().includes('state.stages.journeyType')) {
+      return false; // Set journeyType to false
+    }
+    return null;
+  });
+
+  render(
+    <Alias
+      handleCallback={jest.fn()}
+      handleFieldDispatch={jest.fn()}
+      value={{
+        marital_status: null,
+        education_level: "",
+        country: "",
+        ownership_status: "",
+        gender: "",
+        country_of_birth: "",
+      }}
+    />
+  );
+
+  const button = screen.getByRole("textbox", { name: constant.ariaLabel }); // Assuming the input type is used as a button with aria-label
+  expect(button).toBeInTheDocument();
+  expect(button.className).toContain("show-btn"); // Ensure the button is shown
+});
