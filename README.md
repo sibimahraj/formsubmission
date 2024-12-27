@@ -386,3 +386,186 @@ const trackEvents = new service();
 export default trackEvents;
 
 
+import trackEvents from '../path/to/service'; // Update the path as needed
+import { store } from "../utils/store/store";
+import { getUrl } from "../utils/common/change.utils";
+
+jest.mock('../utils/store/store', () => ({
+    store: {
+        getState: jest.fn(),
+    },
+}));
+
+jest.mock('../utils/common/change.utils', () => ({
+    getUrl: {
+        getParameterByName: jest.fn(),
+        getChannelRefNo: jest.fn(),
+    },
+}));
+
+describe('service', () => {
+    let serviceInstance: any;
+
+    beforeEach(() => {
+        serviceInstance = trackEvents;
+        global.window.adobeDataLayer = [];
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+        global.window.adobeDataLayer = [];
+    });
+
+    describe('documentList', () => {
+        it('should return a list of uploaded documents', () => {
+            const mockResponse = [
+                {
+                    document_list: [
+                        {
+                            document_category: "Category 1",
+                            document_options: [
+                                {
+                                    document_types: [
+                                        {
+                                            uploaded_documents: ["doc1"],
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ];
+            const result = serviceInstance.documentList(mockResponse);
+            expect(result).toEqual([
+                {
+                    formFieldName: "Category 1 Uploaded",
+                    formFieldValue: "Yes",
+                },
+            ]);
+        });
+
+        it('should return "na" when no documents are present', () => {
+            const mockResponse = [];
+            const result = serviceInstance.documentList(mockResponse);
+            expect(result).toEqual([
+                {
+                    formFieldName: "na",
+                    formFieldValue: "na",
+                },
+            ]);
+        });
+    });
+
+    describe('getFormFieldValue', () => {
+        it('should return the correct value for a given label and lov', () => {
+            const mockStage = {
+                stages: {
+                    userInput: {
+                        applicants: {
+                            residency_status_a_1: "value1",
+                        },
+                    },
+                    stages: [
+                        {
+                            stageInfo: {
+                                applicants: {
+                                    residency_status_a_1: "value2",
+                                },
+                            },
+                        },
+                    ],
+                },
+                lov: {
+                    lov: [
+                        {
+                            label: "residency_status",
+                            value: [
+                                {
+                                    CODE_VALUE: "value2",
+                                    CODE_DESC: "Description",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            };
+            const result = serviceInstance.getFormFieldValue("residency_status", mockStage, "Yes");
+            expect(result).toEqual("Description");
+        });
+
+        it('should return "na" if no value is found', () => {
+            const mockStage = { stages: {} };
+            const result = serviceInstance.getFormFieldValue("residency_status", mockStage, "Yes");
+            expect(result).toEqual("na");
+        });
+    });
+
+    describe('triggerAdobeEvent', () => {
+        it('should push the correct data to adobeDataLayer for formStart', () => {
+            store.getState.mockReturnValue({
+                stages: {
+                    stages: [
+                        {
+                            stageInfo: {},
+                        },
+                    ],
+                },
+                urlParam: {
+                    aggregators: {
+                        aggregator_code: "code",
+                        aggregator_type: "type",
+                        aggregator_instance: "instance",
+                    },
+                },
+            });
+
+            getUrl.getParameterByName.mockReturnValue("non-upload");
+            serviceInstance.triggerAdobeEvent('formStart');
+            expect(global.window.adobeDataLayer.length).toBeGreaterThan(0);
+        });
+
+        it('should not push data if auth is "upload"', () => {
+            getUrl.getParameterByName.mockReturnValue("upload");
+            serviceInstance.triggerAdobeEvent('formStart');
+            expect(global.window.adobeDataLayer).toHaveLength(0);
+        });
+    });
+
+    describe('getAdobeDataLayer', () => {
+        it('should return the correct data object', () => {
+            const mockStage = {
+                stages: {
+                    stages: [
+                        {
+                            stageInfo: {
+                                applicants: {
+                                    profile_id_a_1: "user123",
+                                },
+                                products: [
+                                    {
+                                        name: "Product Name",
+                                        product_type: "Product Type",
+                                        product_category: "PL",
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                },
+                journeyType: "personal",
+                auth: {
+                    SSCode: "logged_in",
+                },
+            };
+            getUrl.getChannelRefNo.mockReturnValue({ channelRefNo: "channel123" });
+
+            const result = serviceInstance.getAdobeDataLayer('formSubmit', mockStage, 'Step Name');
+            expect(result).toHaveProperty('event', 'formSubmit');
+            expect(result.page.pageInfo.pageName).toContain("personal");
+            expect(result.form.channelRefNum).toBe("channel123");
+        });
+    });
+});
+
+
