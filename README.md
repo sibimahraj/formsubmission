@@ -723,3 +723,14 @@ describe("Text Component Test Suite", () => {
     expect(mockDispatch).toHaveBeenCalledWith(lastAction.getField("loan_tenor"));
   });
 });
+
+
+TypeError: Cannot read properties of undefined (reading 'stages')
+
+      22 | const Text = (props: KeyWithAnyModel) => {
+      23 |   const [error, setError] = useState("");
+    > 24 |   const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+         |                                                                         ^
+      25 |
+      26 |   const userInputSelector = useSelector(
+      27 |     (state: StoreModel) => state.stages.userInput
