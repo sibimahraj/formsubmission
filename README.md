@@ -702,3 +702,171 @@ class service {
 const trackEvents = new service();
 
 export default trackEvents;
+
+import gaTrackEvents from "./ga-track-events";// Adjust the path based on your file structure
+import TagManager from "react-gtm-module";
+import { getUrl } from "../utils/common/change.utils";
+import { store } from "../utils/store/store";
+import { CONSTANTS } from "../utils/common/constants";
+import { getProductCategory } from "./common-service";
+
+// Mock dependencies
+jest.mock("react-gtm-module", () => ({
+  dataLayer: jest.fn(),
+}));
+
+jest.mock("../utils/common/change.utils", () => ({
+  getUrl: {
+    getParameterByName: jest.fn(),
+    getChannelRefNo: jest.fn(() => ({ applicationRefNo: "APP12345" })),
+  },
+}));
+
+jest.mock("../utils/store/store", () => ({
+  store: {
+    getState: jest.fn(),
+  },
+}));
+
+jest.mock("./common-service", () => ({
+  getProductCategory: jest.fn(),
+}));
+jest.mock("../utils/common/change.utils", () => ({
+    ...jest.requireActual("../utils/common/change.utils"),
+    authenticateType: jest.fn().mockReturnValue("mocked-flow-type"), // Mocked return value
+  }));
+
+describe("GA Track Events Service", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe("getProductsInfoForGA", () => {
+    it("should return the correct products info array", () => {
+      const mockStage = {
+        stages: {
+          stages: [
+            {
+              stageInfo: {
+                products: [
+                  {
+                    name: "Credit Card",
+                    product_type: "CC01",
+                    product_category: "CC",
+                    campaign: "CAM123",
+                  },
+                  {
+                    name: "Savings Account",
+                    product_type: "SA01",
+                    product_category: "SA",
+                    campaign: "CAM456",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      };
+
+      const result = gaTrackEvents.getProductsInfoForGA(mockStage);
+
+      expect(result).toEqual([
+        {
+          name: "credit-card",
+          id: "CC01",
+          price: "0",
+          brand: "scb",
+          category: "credit-cards",
+          categoryForPgViewEvnt: "credit-cards",
+          variant: "deposits",
+          quantity: 1,
+          campaignCode: "CAM123",
+        },
+        {
+          name: "savings-account",
+          id: "SA01",
+          price: "0",
+          brand: "scb",
+          category: "savings-account",
+          categoryForPgViewEvnt: "borrow",
+          variant: "deposits",
+          quantity: 1,
+          campaignCode: "CAM456",
+        },
+      ]);
+    });
+  });
+
+  describe("getStepPath", () => {
+    it("should return the correct step name based on stageId and journey type", () => {
+      const mockStage = {
+        stages: {
+          stages: [
+            {
+              stageId: "ssf-2",
+              stageInfo: {
+                products: [{ product_category: "CA" }],
+              },
+            },
+          ],
+          journeyType: "ETC",
+        },
+      };
+
+      CONSTANTS["ETC_CASA"] = { "ssf-2": { name: "Step 2" } };
+      (getProductCategory as jest.Mock).mockReturnValue("CA");
+
+      const result = gaTrackEvents.getStepPath(mockStage);
+      expect(result).toBe("Step 2");
+    });
+  });
+
+  describe("pageView", () => {
+    it("should trigger TagManager.dataLayer with the correct event data", () => {
+      const mockStage = {
+        stages: {
+          stages: [
+            {
+              stageInfo: {
+                products: [
+                  {
+                    name: "Credit Card",
+                    product_type: "CC01",
+                    product_category: "CC",
+                    campaign: "CAM123",
+                  },
+                ],
+              },
+              stageId: "ssf-2",
+            },
+          ],
+          journeyType: "ETC",
+          isDocumentUpload: false,
+        },
+      };
+
+     ( store.getState as jest.Mock).mockReturnValue(mockStage);
+     (getUrl.getParameterByName as jest.Mock).mockImplementation((param) => {
+        if (param === "auth") return "apply";
+        if (param === "instance") return "INST123";
+        return null;
+      });
+
+      gaTrackEvents.pageView("basic-info");
+
+      expect(TagManager.dataLayer).toHaveBeenCalledWith({
+        dataLayer: {
+          CountryCode: "sg",
+          ProductName: "credit-cards",
+          SubProductName: "credit-card",
+          FormStep: undefined,
+          Language: "en",
+          event: "RTOBPageview",
+          offerCode: "CAM123",
+          Pageview:
+            "/sg/credit-cards/credit-card/apply/step/undefined?instance=INST123",
+        },
+      });
+    });
+  });
+});
