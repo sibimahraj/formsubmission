@@ -870,3 +870,141 @@ describe("GA Track Events Service", () => {
     });
   });
 });
+
+import trackEvents from "./track-events"; // Adjust the path based on your file structure
+import TagManager from "react-gtm-module";
+import { getUrl } from "../utils/common/change.utils";
+import { store } from "../utils/store/store";
+import { CONSTANTS } from "../utils/common/constants";
+
+// Mock dependencies
+jest.mock("react-gtm-module", () => ({
+  dataLayer: jest.fn(),
+}));
+
+jest.mock("../utils/common/change.utils", () => ({
+  getUrl: {
+    getParameterByName: jest.fn(),
+    getChannelRefNo: jest.fn(() => ({ applicationRefNo: "APP12345" })),
+  },
+}));
+
+jest.mock("../utils/store/store", () => ({
+  store: {
+    getState: jest.fn(),
+  },
+}));
+
+describe("Track Events Service", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe("trackPageView", () => {
+    it("should call TagManager.dataLayer with correct event data", () => {
+      const mockStage = {
+        stages: {
+          stages: [
+            {
+              stageInfo: {
+                products: [
+                  {
+                    name: "Credit Card",
+                    product_type: "CC01",
+                    product_category: "CC",
+                  },
+                ],
+              },
+              stageId: "ssf-2",
+            },
+          ],
+          journeyType: "ETC",
+        },
+      };
+
+      (store.getState as jest.Mock).mockReturnValue(mockStage);
+      (getUrl.getParameterByName as jest.Mock).mockImplementation((param) => {
+        if (param === "auth") return "apply";
+        if (param === "instance") return "INST123";
+        return null;
+      });
+
+      trackEvents.trackPageView("basic-info");
+
+      expect(TagManager.dataLayer).toHaveBeenCalledWith({
+        dataLayer: {
+          event: "PageView",
+          pagePath:
+            "/basic-info/apply/ssf-2?instance=INST123",
+          productCategory: "credit-cards",
+        },
+      });
+    });
+
+    it("should handle missing parameters gracefully", () => {
+      (store.getState as jest.Mock).mockReturnValue({});
+      (getUrl.getParameterByName as jest.Mock).mockReturnValue(null);
+
+      trackEvents.trackPageView("unknown");
+
+      expect(TagManager.dataLayer).toHaveBeenCalledWith({
+        dataLayer: {
+          event: "PageView",
+          pagePath: "/unknown",
+          productCategory: "unknown",
+        },
+      });
+    });
+  });
+
+  describe("trackCustomEvent", () => {
+    it("should trigger a custom event with correct parameters", () => {
+      const eventData = {
+        event: "ButtonClick",
+        label: "Submit Button",
+      };
+
+      trackEvents.trackCustomEvent(eventData);
+
+      expect(TagManager.dataLayer).toHaveBeenCalledWith({
+        dataLayer: eventData,
+      });
+    });
+
+    it("should handle missing event data gracefully", () => {
+      trackEvents.trackCustomEvent({});
+
+      expect(TagManager.dataLayer).toHaveBeenCalledWith({
+        dataLayer: {},
+      });
+    });
+  });
+
+  describe("trackConversion", () => {
+    it("should log a conversion event with required data", () => {
+      const conversionData = {
+        transactionId: "TRX12345",
+        value: "100",
+      };
+
+      trackEvents.trackConversion(conversionData);
+
+      expect(TagManager.dataLayer).toHaveBeenCalledWith({
+        dataLayer: {
+          event: "Conversion",
+          ...conversionData,
+        },
+      });
+    });
+
+    it("should handle missing conversion data gracefully", () => {
+      trackEvents.trackConversion({});
+
+      expect(TagManager.dataLayer).toHaveBeenCalledWith({
+        dataLayer: {
+          event: "Conversion",
+        },
+      });
+    });
+  });
+});
