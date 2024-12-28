@@ -118,3 +118,13 @@ describe("Text Component", () => {
     expect(errorMsg).toBeInTheDocument();
   });
 });
+
+Actions must be plain objects. Use custom middleware for async actions.
+
+      360 |           !(stageSelector[0].stageId === "ssf-2" && getUrl.getJourneyType())
+      361 |         ) {
+    > 362 |           dispatch(
+          |           ^
+      363 |             isFieldUpdate(props, fieldValue, props.data.logical_field_name)
+      364 |           );
+      365 |           props.handleCallback(props.data, fieldValue);
