@@ -291,3 +291,20 @@ describe("GA Track Events Service", () => {
     });
   });
 });
+
+Test suite failed to run
+
+    TypeError: (0 , _change.authenticateType) is not a function
+
+      260 | }
+      261 | export const getStageCounts = () =>{
+    > 262 |   const flowType = authenticateType();
+          |                                    ^
+      263 |   return getTotalStep(flowType);
+      264 | }
+      265 |
+
+      at getStageCounts (src/utils/common/constants.ts:262:36)
+      at Object.getStageCounts (src/utils/common/constants.ts:266:30)
+      at Object.require (src/services/ga-track-events.ts:5:1)
+      at Object.require (src/services/ga-track-events.test.ts:1:1)
