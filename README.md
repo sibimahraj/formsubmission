@@ -543,3 +543,55 @@ describe("exceptionCheck - Extended Coverage", () => {
     expect(actions).toContainEqual(dispatchLoader(false));
   });
 });
+
+exceptionCheck › should handle 'RESUBMIT' action with errors and reject with the appropriate error
+
+    expect(received).toContainEqual(expected) // deep equality
+
+    Expected value: {"payload": {"errorList": {"errors": [{"detail": "Invalid data"}]}, "error_button": "Ok", "error_header": "Please try 
+again !", "error_type": "back", "status": "error"}, "type": "error/getExceptionList"}
+    Received array: [{"payload": true, "type": "error/getRetryStatus"}, {"payload": {"errorList": [{"detail": "We have encountered a tech n
+ical issue. Please try again."}], "error_button": "Ok", "error_header": "Please try again !", "error_type": "back", "status": "error"}, "type": "error/getExceptionList"}, {"payload": {"isFetching": false}, "type": "loader/getState"}]
+
+      55 |       errorAction.getRetryStatus(true)
+      56 |     );
+    > 57 |     expect(actions).toContainEqual(
+         |                     ^
+      58 |       errorAction.getExceptionList({
+      59 |         error_header: "Please try again !",
+      60 |         errorList: mockResponse.data.application.errors,
+
+      at Object.toContainEqual (src/services/exception-handling-utils.test.ts:57:21)
+
+  ● exceptionCheck › should handle 'STOP' action with 'HARD' type and reject with the appropriate error
+
+    expect(received).toContainEqual(expected) // deep equality
+
+    Expected value: {"payload": {"errorList": {"errors": [{"detail": "Hard error occurred"}]}, "error_button": "Ok", "error_header": "Something went wrong!", "error_type": "CancelApplication", "status": "error"}, "type": "error/getExceptionList"}
+    Received array: [{"payload": {"errorList": [{"detail": "Sorry, we are unable to process your request. Please try again later"}], "error_button": "Ok", "error_header": "Something went wrong!", "error_type": "CancelApplication", "status": "error"}, "type": "error/getExceptionList"}, {"payload": {"isFetching": false}, "type": "loader/getState"}]
+
+      86 |
+      87 |     const actions = store.getActions();
+    > 88 |     expect(actions).toContainEqual(
+         |                     ^
+      89 |       errorAction.getExceptionList({
+      90 |         error_header: "Something went wrong!",
+      91 |         errorList: mockResponse.data.application.errors,
+
+      at Object.toContainEqual (src/services/exception-handling-utils.test.ts:88:21)
+
+  ● exceptionCheck › should handle 'isExit' scenario with invalid action
+
+    expect(received).toContainEqual(expected) // deep equality
+
+    Expected value: [Function anonymous]
+    Received array: [{"payload": true, "type": "error/getRetryStatus"}, {"payload": {"errorList": {"errors": [{"detail": "Sorry, we are unable to save your application. Please proceed by resuming the application"}]}, "error_button": "Ok", "error_header": "Something went wrong!", "error_type": "cancelResume", "status": "error"}, "type": "error/getExceptionList"}, {"payload": {"isFetching": false}, "type": "loader/getState"}]
+
+      167 |       })
+      168 |     );
+    > 169 |     expect(actions).toContainEqual(dispatchLoader(false));
+          |                     ^
+      170 |   });
+      171 | });
+
+      at Object.toContainEqual (src/services/exception-handling-utils.test.ts:169:21)
