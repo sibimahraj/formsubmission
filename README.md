@@ -595,3 +595,44 @@ ical issue. Please try again."}], "error_button": "Ok", "error_header": "Please 
       171 | });
 
       at Object.toContainEqual (src/services/exception-handling-utils.test.ts:169:21)
+
+it("should handle 'RESUBMIT' action with errors and reject with the appropriate error", async () => {
+  // Mock the response to match the function logic
+  const mockResponse = {
+    data: {
+      application: {
+        errors: { errors: [{ detail: "We have encountered a technical issue. Please try again." }] },
+        response_action: "RESUBMIT",
+        response_type: "SOFT",
+      },
+    },
+    status: 200,
+  };
+
+  // Mock Axios
+  axios.post.mockResolvedValue(mockResponse);
+
+  // Dispatch the action
+  const store = mockStore({});
+  await store.dispatch(exceptionCheck(mockResponse) as any);
+
+  // Get all dispatched actions
+  const actions = store.getActions();
+
+  // Validate all dispatched actions
+  expect(actions).toContainEqual(
+    errorAction.getRetryStatus(true) // Validate 'getRetryStatus' action
+  );
+  expect(actions).toContainEqual(
+    errorAction.getExceptionList({
+      error_header: "Please try again !",
+      errorList: [{ detail: "We have encountered a technical issue. Please try again." }], // Match error details
+      error_button: "Ok",
+      error_type: "back",
+      status: "error",
+    }) // Validate 'getExceptionList' action
+  );
+  expect(actions).toContainEqual(
+    dispatchLoader(false) // Validate 'dispatchLoader' action
+  );
+});
