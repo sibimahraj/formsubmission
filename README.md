@@ -306,3 +306,240 @@ describe("exceptionCheck", () => {
     expect(actions).toContainEqual(dispatchLoader(false));
   });
 });
+
+import { exceptionCheck } from "../services/exception-service";
+import { errorAction } from "../utils/store/error-slice";
+import { dispatchLoader, dispatchError } from "../services/common-service";
+import configureStore from "redux-mock-store";
+import thunk from "redux-thunk";
+
+const mockStore = configureStore([thunk]);
+
+describe("exceptionCheck - Extended Coverage", () => {
+  let store: any;
+
+  beforeEach(() => {
+    store = mockStore({});
+  });
+
+  it("should handle a successful response with no response_action or response_type", async () => {
+    const mockResponse = {
+      status: 200,
+      data: {
+        application: {},
+      },
+    };
+
+    const result = await store.dispatch(exceptionCheck(mockResponse));
+    const actions = store.getActions();
+
+    expect(result).toEqual(mockResponse);
+    expect(actions).toEqual([]);
+  });
+
+  it("should handle an 'isExit' scenario with valid response_action but missing response_type", async () => {
+    const mockResponse = {
+      status: 200,
+      data: {
+        application: {
+          response_action: "SUCCESS",
+        },
+      },
+    };
+
+    const result = await store.dispatch(exceptionCheck(mockResponse, true));
+    const actions = store.getActions();
+
+    expect(result).toEqual(mockResponse);
+    expect(actions).toEqual([]);
+  });
+
+  it("should reject when status is not 200/201 with empty errors object", async () => {
+    const mockResponse = {
+      status: 500,
+      data: {},
+    };
+
+    try {
+      await store.dispatch(exceptionCheck(mockResponse));
+    } catch (err) {
+      expect(err).toBe("Rejected");
+    }
+
+    const actions = store.getActions();
+    expect(actions).toContainEqual(dispatchError([]));
+  });
+
+  it("should handle response_action 'STOP' with missing errors in HARD type", async () => {
+    const mockResponse = {
+      status: 200,
+      data: {
+        application: {
+          response_action: "STOP",
+          response_type: "HARD",
+        },
+      },
+    };
+
+    try {
+      await store.dispatch(exceptionCheck(mockResponse));
+    } catch (err) {
+      expect(err).toBe("Rejected");
+    }
+
+    const actions = store.getActions();
+    expect(actions).toContainEqual(
+      errorAction.getExceptionList({
+        error_header: "Something went wrong!",
+        errorList: [
+          {
+            detail:
+              "Sorry, we are unable to process your request. Please try again later",
+          },
+        ],
+        error_button: "Ok",
+        error_type: "CancelApplication",
+        status: "error",
+      })
+    );
+    expect(actions).toContainEqual(dispatchLoader(false));
+  });
+
+  it("should reject for response_action 'CORRECT AND RESUBMIT' with no errors", async () => {
+    const mockResponse = {
+      status: 200,
+      data: {
+        application: {
+          response_action: "CORRECT AND RESUBMIT",
+        },
+      },
+    };
+
+    try {
+      await store.dispatch(exceptionCheck(mockResponse));
+    } catch (err) {
+      expect(err).toBe("Rejected");
+    }
+
+    const actions = store.getActions();
+    expect(actions).toContainEqual(
+      errorAction.getRetryStatus(true)
+    );
+    expect(actions).toContainEqual(
+      errorAction.getExceptionList({
+        error_header: "Please try again !",
+        errorList: [
+          {
+            detail:
+              "We have encountered a technical issue. Please try again.",
+          },
+        ],
+        error_button: "Ok",
+        error_type: "back",
+        status: "error",
+      })
+    );
+    expect(actions).toContainEqual(dispatchLoader(false));
+  });
+
+  it("should handle a successful response with response_type 'SOFT'", async () => {
+    const mockResponse = {
+      status: 201,
+      data: {
+        application: {
+          response_action: "CONTINUE",
+          response_type: "SOFT",
+        },
+      },
+    };
+
+    const result = await store.dispatch(exceptionCheck(mockResponse));
+    const actions = store.getActions();
+
+    expect(result).toEqual(mockResponse);
+    expect(actions).toEqual([]);
+  });
+
+  it("should reject if response_action is invalid", async () => {
+    const mockResponse = {
+      status: 200,
+      data: {
+        application: {
+          response_action: "INVALID_ACTION",
+          response_type: "INFO",
+        },
+      },
+    };
+
+    try {
+      await store.dispatch(exceptionCheck(mockResponse));
+    } catch (err) {
+      expect(err).toBe("Rejected");
+    }
+
+    const actions = store.getActions();
+    expect(actions).toContainEqual(dispatchError([]));
+  });
+
+  it("should handle a missing application in the response", async () => {
+    const mockResponse = {
+      status: 200,
+      data: {},
+    };
+
+    const result = await store.dispatch(exceptionCheck(mockResponse));
+    const actions = store.getActions();
+
+    expect(result).toEqual(mockResponse);
+    expect(actions).toEqual([]);
+  });
+
+  it("should handle a response without data property", async () => {
+    const mockResponse = {
+      status: 200,
+    };
+
+    const result = await store.dispatch(exceptionCheck(mockResponse));
+    const actions = store.getActions();
+
+    expect(result).toEqual(mockResponse);
+    expect(actions).toEqual([]);
+  });
+
+  it("should reject if response_action is undefined and isExit is true", async () => {
+    const mockResponse = {
+      status: 200,
+      data: {
+        application: {},
+      },
+    };
+
+    try {
+      await store.dispatch(exceptionCheck(mockResponse, true));
+    } catch (err) {
+      expect(err).toBe("Rejected");
+    }
+
+    const actions = store.getActions();
+    expect(actions).toContainEqual(
+      errorAction.getRetryStatus(true)
+    );
+    expect(actions).toContainEqual(
+      errorAction.getExceptionList({
+        error_header: "Something went wrong!",
+        errorList: {
+          errors: [
+            {
+              detail:
+                "Sorry, we are unable to save your application. Please proceed by resuming the application",
+            },
+          ],
+        },
+        error_button: "Ok",
+        error_type: "cancelResume",
+        status: "error",
+      })
+    );
+    expect(actions).toContainEqual(dispatchLoader(false));
+  });
+});
