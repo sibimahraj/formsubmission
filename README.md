@@ -588,3 +588,138 @@ const Text = (props: KeyWithAnyModel) => {
 };
 
 export default Text;
+
+
+
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { useDispatch, useSelector } from "react-redux";
+import Text from "./Text"; // Adjust the path as needed
+import { isFieldUpdate, isFieldValueUpdate } from "../actions/fieldActions"; // Adjust imports
+import { referralcodeAction } from "../actions/referralcodeAction";
+import { stagesAction } from "../actions/stagesAction";
+import { aliasAction } from "../actions/aliasAction";
+import { lastAction } from "../actions/lastAction";
+
+// Mock useSelector and useDispatch
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+let mockDispatch;
+
+describe("Text Component Test Suite", () => {
+  beforeEach(() => {
+    // Reset mocks before each test
+    mockDispatch = jest.fn();
+    useDispatch.mockReturnValue(mockDispatch);
+    useSelector.mockImplementation((callback) =>
+      callback({
+        stageSelector: [{ stageId: "ssf-2", stageInfo: { applicants: {} } }],
+        userInputSelector: { applicants: {} },
+        referralcodeSelector: { errormsg: "", referId: "" },
+      })
+    );
+  });
+
+  it("should render the component with the correct placeholder for 'passport_no'", () => {
+    const mockProps = {
+      data: {
+        logical_field_name: "passport_no",
+        rwb_label_name: "Passport Number",
+        type: "text",
+      },
+    };
+
+    render(<Text {...mockProps} />);
+    expect(screen.getByPlaceholderText("Enter your passport Number")).toBeInTheDocument();
+  });
+
+  it("should render with placeholder for referral_id_2 when stageId is not 'bd-1'", () => {
+    const mockProps = {
+      data: { logical_field_name: "referral_id_2", rwb_label_name: "Referral Code" },
+    };
+
+    render(<Text {...mockProps} />);
+    expect(screen.getByPlaceholderText("Enter referral code here")).toBeInTheDocument();
+  });
+
+  it("should set default value for tax_id_no based on casa_fatca_declaration_a_1", () => {
+    const mockProps = {
+      data: { logical_field_name: "tax_id_no" },
+    };
+
+    useSelector.mockImplementation((callback) =>
+      callback({
+        userInputSelector: {
+          applicants: { casa_fatca_declaration_a_1: "Y", NRIC_a_1: "123456" },
+        },
+        stageSelector: [{ stageInfo: { applicants: {} } }],
+      })
+    );
+
+    render(<Text {...mockProps} />);
+    expect(screen.getByDisplayValue("123456")).toBeInTheDocument();
+  });
+
+  it("should not set a default value when no conditions are met", () => {
+    const mockProps = {
+      data: { logical_field_name: "tax_id_no" },
+    };
+
+    render(<Text {...mockProps} />);
+    expect(screen.getByDisplayValue("")).toBeInTheDocument();
+  });
+
+  it("should display the embossed name counter correctly", () => {
+    const mockProps = {
+      data: { logical_field_name: "embossed_name" },
+    };
+
+    render(<Text {...mockProps} />);
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "Card Holder" } });
+
+    expect(screen.getByText("11/19")).toBeInTheDocument();
+  });
+
+  it("should display error for invalid referral code", () => {
+    const mockProps = {
+      data: { logical_field_name: "referral_id_2" },
+    };
+
+    useSelector.mockImplementation((callback) =>
+      callback({
+        referralcodeSelector: { errormsg: "Invalid code", referId: "" },
+      })
+    );
+
+    render(<Text {...mockProps} />);
+    expect(screen.getByText("Invalid code")).toBeInTheDocument();
+  });
+
+  it("should dispatch actions to remove alias fields when remove button is clicked", () => {
+    const mockProps = {
+      data: { logical_field_name: "alias_field_2", hide_remove_btn: false },
+    };
+
+    render(<Text {...mockProps} />);
+    const removeButton = screen.getByRole("button");
+    fireEvent.click(removeButton);
+
+    expect(mockDispatch).toHaveBeenCalledTimes(3); // Dispatch 3 actions
+  });
+
+  it("should dispatch getField action on focus", () => {
+    const mockProps = {
+      data: { logical_field_name: "loan_tenor" },
+    };
+
+    render(<Text {...mockProps} />);
+    const input = screen.getByRole("textbox");
+    fireEvent.focus(input);
+
+    expect(mockDispatch).toHaveBeenCalledWith(lastAction.getField("loan_tenor"));
+  });
+});
