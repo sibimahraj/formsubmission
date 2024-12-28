@@ -128,3 +128,13 @@ Actions must be plain objects. Use custom middleware for async actions.
       363 |             isFieldUpdate(props, fieldValue, props.data.logical_field_name)
       364 |           );
       365 |           props.handleCallback(props.data, fieldValue);
+
+      TypeError: props.handleFieldDispatch is not a function
+
+      13 | ): any => {
+      14 |   return (_dispatch: AppDispatch) => {
+    > 15 |     props.handleFieldDispatch(fieldName, fieldValue);
+         |           ^
+      16 |   };
+      17 | };
+      18 |
