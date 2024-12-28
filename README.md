@@ -1,140 +1,128 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import { Provider } from "react-redux";
-import configureStore from "redux-mock-store"
-import Text from "./text";// Adjust the path based on your file structure
-//import { StoreModel } from "../../models"; // Adjust the path if needed
+import TagManager from "react-gtm-module";
+import { getUrl } from "../utils/common/change.utils";
+import { KeyWithAnyModel } from "../utils/model/common-model";
+import { store } from "../utils/store/store";
+import { CONSTANTS } from "../utils/common/constants";
+import { getProductCategory } from "./common-service";
 
-// Mock Redux store
-const mockStore = configureStore([]);
-let store: any;
+class service {
+    getProductsInfoForGA = (stage: KeyWithAnyModel) => {
+        let response: Array<{}> = [];
+        const products = stage.stages.stages[0].stageInfo.products;
+        products.forEach((product: KeyWithAnyModel) => {
+            response.push({
+                name: product.name.toLowerCase().replace(/ /g, "-"), // string in required format
+                id: product.product_type, // id of product  string (can be populated from backend CRM)
+                price: "0",
+                brand: "scb", // constant
+                category: product.product_category === 'CC' ? 'credit-cards' : product.product_category === 'CA' ? 'current-account' : product.product_category === 'SA' ? 'savings-account' : 'borrow',
+                categoryForPgViewEvnt: product.product_category === "CC" ? "credit-cards" : "borrow",
+                variant: "deposits", // constant
+                quantity: 1, // integer always 1
+                campaignCode: product.campaign
+            });
+        });
+        return response;
+    };
 
+    getStepPath = (stage: any) => {
+        let stageId = stage.stages.stages[0].stageId;
+        let journeyType = stage.stages.journeyType;
+        let journeyCtnType;
+        const productCategory = getProductCategory(stage.stages.stages[0].stageInfo.products);
+        if (journeyType === "ETC") {
+            journeyCtnType =
+                productCategory === "CA" || productCategory === "SA"
+                    ? "ETC_CASA"
+                    : "ETC_CC";
+        } else {
+            journeyCtnType =
+                productCategory === "CA" || productCategory === "SA"
+                    ? "NON_ETC_CASA"
+                    : "NON_ETC_CC";
+        }
+        const steps: KeyWithAnyModel = CONSTANTS[journeyCtnType];
+        return steps[stageId].name;
+    };
 
-describe("Text Component", () => {
-  beforeEach(() => {
-    store = mockStore({
-      stages: {
-        stages: [
-          {
-            stageId: "ssf-2",
-            stageInfo: {
-              applicants: {
-                tax_id_no_a_1: "123456789",
-                embossed_name_a_1: "John Doe",
-                casa_fatca_declaration_a_1: "Y",
-              },
-            },
-           
-          },
-        ],
-        userInput: {
-          applicants: {
-            annual_income_a_1: "50000",
-            required_loan_amount_a_1: "100000",
-            loan_tenor_a_1: "5",
-          },
-        },
-      },
-      fielderror:{
-        error:[
-         {
-             
-         }
+    pageView = (eventName: string, isStp?: boolean) => {
+        const stage = store.getState();
+        if (
+            stage &&
+            stage.stages.stages &&
+            stage.stages.stages.length > 0 &&
+            stage.stages.stages[0].stageInfo && getUrl.getParameterByName("auth") !== "upload"
+            && !store.getState().stages.isDocumentUpload
+        ) {
+            let productsInfo = this.getProductsInfoForGA(stage);
+            let product: KeyWithAnyModel = productsInfo[0];
+            let stepName = this.getStepPath(stage);
+            let code = getUrl.getParameterByName("instance");
+            let productName = "";
+            let subProductName = "";
+            let campaignCode = "";
+            productsInfo.forEach(function (product: KeyWithAnyModel, index: number) {
+                let subCategoryName = product.name;
+                if (index >= 1) {
+                    productName += "|" + productName + "|" + product.category;
+                    subProductName += "|" + subProductName + "|" + subCategoryName;
+                    campaignCode += "|" + campaignCode + "|" + product.campaignCode;
+                } else {
+                    productName = product.category;
+                    subProductName = subCategoryName;
+                    campaignCode = product.campaignCode;
+                }
+            });
+            let pageViewEvent: KeyWithAnyModel = {};
+            pageViewEvent = {
+                CountryCode: "sg",
+                ProductName: productName,
+                SubProductName: subProductName,
+                FormStep: stepName,
+                Language: "en",
+                event: "RTOBPageview",
+                offerCode: campaignCode,
+            };
+            let bundleProduct = productsInfo.length > 1 ? "/bundled" : "";
 
-        ] 
-     },
-     postalCode:{
-        postalCode:[
-         {
-             
-         }
+            if (eventName === "basic-info") {
+                pageViewEvent.Pageview =
+                    "/sg/" +
+                    product.categoryForPgViewEvnt +
+                    "/" +
+                    product.name +
+                    bundleProduct +
+                    "/apply/step/" +
+                    stepName +
+                    (code !== "" && code ? "?instance=" + code : "");
 
-        ] 
-     },
-     urlParam:{
-        resume:[
-         {
-             
-         }
+            } else {
+                let clientType = stage.stages.journeyType ? stage.stages.journeyType.toLowerCase() : "na";
+                pageViewEvent.Pageview =
+                    "/sg/" +
+                    product.categoryForPgViewEvnt +
+                    "/" +
+                    product.name +
+                    (clientType === "etb" ? "-clients" : "") +
+                    "/apply/step/" +
+                    stepName +
+                    (code !== "" && code ? "?instance=" + code : "");
+                pageViewEvent.ClientType = clientType;
+                pageViewEvent.ApplicationNumber = getUrl.getChannelRefNo().applicationRefNo;
 
-        ] 
-     },
-      referralcode: {
-        errormsg: "",
-        referId: "REF123",
-      },
-    });
-  });
+                if (stepName === 'Thank You') {
+                    pageViewEvent.ApprovalStatus = isStp ? 'approved' : 'pending';
+                }
+            }
 
-  it("renders correctly and handles input changes", () => {
-    render(
-      <Provider store={store}>
-        <Text
-          data={{
-            logical_field_name: "tax_id_no",
-            rwb_label_name: "Tax ID Number",
-            type: "text",
-            min_length: 10,
-            length: 15,
-            regex: "\\d+",
-            editable: true,
-          }}
-          handleCallback={jest.fn()}
-        />
-      </Provider>
-    );
+            if (getUrl.getParameterByName("source") === "scmobile_offers") {
+                pageViewEvent.ReferralSource = "SC Mobile - Offers Flow";
+            }
+            TagManager.dataLayer({ dataLayer: pageViewEvent });
+        }
+    };
+}
 
-    const input = screen.getByPlaceholderText("Enter your passport Number");
-    expect(input).toBeInTheDocument();
+const gaTrackEvents = new service();
 
-    // Simulate user input
-    fireEvent.change(input, { target: { value: "987654321" } });
-    expect(input).toHaveValue("987654321");
-  });
-
-  it("displays the error message when input is invalid", () => {
-    render(
-      <Provider store={store}>
-        <Text
-          data={{
-            logical_field_name: "referral_id_2",
-            rwb_label_name: "Referral ID",
-            type: "text",
-            min_length: 5,
-            length: 10,
-            regex: "[A-Za-z0-9]+",
-            editable: true,
-          }}
-          handleCallback={jest.fn()}
-        />
-      </Provider>
-    );
-
-    const input = screen.getByPlaceholderText("Enter referral code here");
-    expect(input).toBeInTheDocument();
-
-    // Simulate invalid input
-    fireEvent.change(input, { target: { value: "$$$" } });
-    const errorMsg = screen.getByText("Invalid code Referral ID");
-    expect(errorMsg).toBeInTheDocument();
-  });
-});
-
-Actions must be plain objects. Use custom middleware for async actions.
-
-      360 |           !(stageSelector[0].stageId === "ssf-2" && getUrl.getJourneyType())
-      361 |         ) {
-    > 362 |           dispatch(
-          |           ^
-      363 |             isFieldUpdate(props, fieldValue, props.data.logical_field_name)
-      364 |           );
-      365 |           props.handleCallback(props.data, fieldValue);
-
-      TypeError: props.handleFieldDispatch is not a function
-
-      13 | ): any => {
-      14 |   return (_dispatch: AppDispatch) => {
-    > 15 |     props.handleFieldDispatch(fieldName, fieldValue);
-         |           ^
-      16 |   };
-      17 | };
-      18 |
+export default gaTrackEvents;
