@@ -290,3 +290,60 @@ class service {
 const validateService = new service();
 
 export default validateService;
+
+
+import validateService from "../path/to/service"; // Update with the correct import path
+
+describe("validateService Comprehensive Test Suite", () => {
+  it("should validate all methods in the service", () => {
+    // Test `allowOnlyCharacter`
+    const mockEvent1 = { target: { value: "123" }, key: "4", preventDefault: jest.fn(), stopPropagation: jest.fn() };
+    const mockEvent2 = { target: { value: "1234" }, key: "5", preventDefault: jest.fn(), stopPropagation: jest.fn() };
+    const allowResult1 = validateService.allowOnlyCharacter(mockEvent1, "default_field");
+    const allowResult2 = validateService.allowOnlyCharacter(mockEvent2, "default_field");
+    expect(allowResult1).toBeUndefined();
+    expect(mockEvent1.preventDefault).not.toHaveBeenCalled();
+    expect(allowResult2).toBe(false);
+    expect(mockEvent2.preventDefault).toHaveBeenCalled();
+
+    // Test `isValidNRIC`
+    const validNRIC = validateService.isValidNRIC("S1234567D");
+    const invalidNRIC = validateService.isValidNRIC("A1234567Z");
+    expect(validNRIC).toBe(true);
+    expect(invalidNRIC).toBe(false);
+
+    // Test `isValidDate`
+    const validDate = validateService.isValidDate("2023-12-19");
+    const invalidDate = validateService.isValidDate("2023-13-01");
+    expect(validDate).toBe(true);
+    expect(invalidDate).toBe(false);
+
+    // Test `calculateAge`
+    const age = validateService.calculateAge("1990-12-19");
+    const noAge = validateService.calculateAge("");
+    expect(age).toBe(34); // Assuming today is 2024-12-19
+    expect(noAge).toBe(0);
+
+    // Test `validateAge`
+    const validAge1 = validateService.validateAge(17, "310", "CA");
+    const validAge2 = validateService.validateAge(20, "500", "OTHER");
+    expect(validAge1).toBe(true);
+    expect(validAge2).toBe(true);
+
+    // Test `formateCurrency`
+    const currencyWithDecimal = validateService.formateCurrency("1000", true);
+    const currencyWithoutDecimal = validateService.formateCurrency("1000", false);
+    expect(currencyWithDecimal).toBe("1,000.00");
+    expect(currencyWithoutDecimal).toBe("1,000");
+
+    // Test `getEIR`
+    const eirResult1 = validateService.getEIR("ETC", "N", "5.0", "12");
+    const eirResult2 = validateService.getEIR("NTC", "Y", "0", "24");
+    expect(eirResult1).toBeDefined();
+    expect(eirResult2).toBeDefined();
+
+    // Test `getExcelRate`
+    const excelRate = validateService.getExcelRate(12, 1000, 10000, 0, 0);
+    expect(excelRate).toBeCloseTo(0.007, 3);
+  });
+});
