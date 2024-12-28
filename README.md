@@ -307,4 +307,10 @@ Test suite failed to run
       at getStageCounts (src/utils/common/constants.ts:262:36)
       at Object.getStageCounts (src/utils/common/constants.ts:266:30)
       at Object.require (src/services/ga-track-events.ts:5:1)
-      at Object.require (src/services/ga-track-events.test.ts:1:1)
+      at Object.require (src/services/ga-track-events.test.ts:1:1
+
+      // ga-track-events.test.ts
+jest.mock("../utils/common/change.utils", () => ({
+  ...jest.requireActual("../utils/common/change.utils"),
+  authenticateType: jest.fn().mockReturnValue("mocked-flow-type"), // Mocked return value
+}));
