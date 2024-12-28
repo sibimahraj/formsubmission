@@ -782,3 +782,28 @@ describe('service', () => {
         });
     });
 });
+
+ service › documentList › should return "na" when document options are empty
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+      Array [
+        Object {
+    -     "formFieldName": "Category 1 Uploaded",
+    +     "formFieldName": "na",
+          "formFieldValue": "na",
+        },
+      ]
+
+      125 |             ];
+      126 |             const result = serviceInstance.documentList(mockResponse);
+    > 127 |             expect(result).toEqual([
+          |                            ^
+      128 |                 {
+      129 |                    formFieldName: "Category 1 Uploaded",
+      130 |                     formFieldValue: "na",
+
+      at Object.toEqual (src/services/track-events.test.ts:127:28)
