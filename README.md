@@ -721,3 +721,203 @@ describe("Text Component", () => {
     expect(errorMsg).toBeInTheDocument();
   });
 });
+
+
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import Text from "./text"; // Adjust the path based on your file structure
+import thunk from "redux-thunk";
+
+const mockStore = configureStore([thunk]);
+const mockHandleFieldDispatch = jest.fn();
+let store: any;
+
+describe("Text Component", () => {
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageId: "ssf-2",
+            stageInfo: {
+              applicants: {
+                tax_id_no_a_1: "123456789",
+                embossed_name_a_1: "John Doe",
+                casa_fatca_declaration_a_1: "Y",
+              },
+            },
+          },
+        ],
+        userInput: {
+          applicants: {
+            annual_income_a_1: "50000",
+            required_loan_amount_a_1: "100000",
+            loan_tenor_a_1: "5",
+          },
+        },
+      },
+      fielderror: {
+        error: [],
+      },
+      postalCode: {
+        postalCode: [],
+      },
+      urlParam: {
+        resume: [],
+      },
+      referralcode: {
+        errormsg: "",
+        referId: "REF123",
+      },
+    });
+  });
+
+  it("renders correctly and handles input changes", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "tax_id_no",
+            rwb_label_name: "Tax ID Number",
+            placeholder: "Tax ID Number",
+            type: "text",
+            min_length: 10,
+            length: 15,
+            regex: "\\d+",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Tax ID Number");
+    expect(input).toBeInTheDocument();
+
+    // Simulate user input
+    fireEvent.change(input, { target: { value: "987654321" } });
+    expect(input).toHaveValue("987654321");
+  });
+
+  it("displays the error message when input is invalid", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "referral_id_2",
+            rwb_label_name: "Referral ID",
+            placeholder: "Enter referral code here",
+            type: "text",
+            min_length: 5,
+            length: 10,
+            regex: "[A-Za-z0-9]+",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Enter referral code here");
+    expect(input).toBeInTheDocument();
+
+    // Simulate invalid input
+    fireEvent.change(input, { target: { value: "$$$" } });
+    const errorMsg = screen.getByText("Referral ID");
+    expect(errorMsg).toBeInTheDocument();
+  });
+
+  it("renders non-editable input field", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "non_editable_field",
+            rwb_label_name: "Non-Editable Field",
+            placeholder: "Cannot edit this",
+            type: "text",
+            min_length: 0,
+            length: 10,
+            regex: ".*",
+            editable: false,
+          }}
+          handleCallback={jest.fn()}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Cannot edit this");
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveAttribute("disabled");
+  });
+
+  it("handles input with insufficient length", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "short_input",
+            rwb_label_name: "Short Input",
+            placeholder: "Short Input",
+            type: "text",
+            min_length: 5,
+            length: 10,
+            regex: "\\d+",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Short Input");
+    fireEvent.change(input, { target: { value: "123" } });
+    expect(mockHandleFieldDispatch).not.toHaveBeenCalled();
+  });
+
+  it("handles valid input and calls callback", () => {
+    const mockCallback = jest.fn();
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "valid_input",
+            rwb_label_name: "Valid Input",
+            placeholder: "Valid Input",
+            type: "text",
+            min_length: 5,
+            length: 10,
+            regex: "\\d+",
+            editable: true,
+          }}
+          handleCallback={mockCallback}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Valid Input");
+    fireEvent.change(input, { target: { value: "12345" } });
+    expect(mockCallback).toHaveBeenCalledWith("12345");
+  });
+
+  it("does not render the input field if the data prop is missing", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={null}
+          handleCallback={jest.fn()}
+        />
+      </Provider>
+    );
+
+    const input = screen.queryByPlaceholderText("Valid Input");
+    expect(input).not.toBeInTheDocument();
+  });
+});
