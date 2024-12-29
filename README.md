@@ -666,3 +666,221 @@ describe("Text Component useEffect", () => {
     expect(mockIsFieldUpdate).toHaveBeenCalled();
   });
 });
+
+useEffect(() => {
+    if (props.data.logical_field_name === "referral_id_2") {
+      if ( referralcodeSelector && referralcodeSelector.refer && referralcodeSelector.refer === "true") {
+        setShowReferralcode(true);
+        if (referralcodeSelector.referId !== null) {
+          const getReferralCode =
+          referralcodeSelector && referralcodeSelector.referId
+            ? referralcodeSelector.referId.toUpperCase()
+            : '';
+        setDefaultValue(getReferralCode);
+        dispatch(referralcodeAction.setReferralId(getReferralCode));
+        }
+        else{
+           setDefaultValue("");
+        }
+      }
+      if (
+        getUrl.getParameterByName("auth") === "resume" || resumeSelector
+      ) {
+        setShowReferralcode(true);
+        if(referralcodeSelector && referralcodeSelector.referId){
+          setDefaultValue(referralcodeSelector && referralcodeSelector.referId);
+        } 
+      }
+    }
+    if (
+      stageSelector &&
+      stageSelector[0] &&
+      stageSelector[0].stageInfo &&
+      stageSelector[0].stageInfo.applicants
+    ) {
+      const userInputResponse =
+        userInputSelector.applicants[fieldIdAppend(props)];
+
+      const stageIndex = getUrl
+        .getUpdatedStage()
+        .updatedStageInputs.findIndex(
+          (ref: any) => ref && ref.stageId === stageSelector[0].stageId
+        );
+      let updatedVal = null;
+      if (stageIndex > -1) {
+        updatedVal =
+          getUrl.getUpdatedStage().updatedStageInputs[stageIndex].applicants[
+            fieldIdAppend(props)
+          ];
+      }
+
+      let fieldValue = "";
+      if (updatedVal) {
+        fieldValue = updatedVal;
+      } else if (userInputResponse) {
+        fieldValue = userInputResponse;
+      } else if (
+        stageSelector[0].stageInfo.applicants[fieldIdAppend(props)] &&
+        updatedVal !== ""
+      ) {
+        fieldValue =
+          stageSelector[0].stageInfo.applicants[fieldIdAppend(props)];
+      }
+      if (props.data.logical_field_name === "residential_address") {
+        let myInfoAddress :string = "";
+         if(getUrl.getParameterByName("isMyInfoVirtual") === "true"){
+        const block = stageSelector[0].stageInfo.applicants["block_a_1"];
+        const building =
+          stageSelector[0].stageInfo.applicants["building_name_a_1"];
+        const street = stageSelector[0].stageInfo.applicants["street_name_a_1"];
+        const unitNo = stageSelector[0].stageInfo.applicants["unit_no_a_1"];
+        const postalCode =
+          stageSelector[0].stageInfo.applicants["postal_code_a_1"];
+
+        if (block && street && postalCode) {
+          myInfoAddress = block +
+            (building ? "," + building : "") +
+            "," +
+            street +
+            (unitNo ? "," + unitNo : "") +
+            "," +
+            postalCode;
+        }
+      }
+        if(myInfoAddress){
+        setDefaultValue(myInfoAddress);
+        dispatch(
+          isFieldUpdate(props, myInfoAddress, props.data.logical_field_name)
+          );
+        }
+      } else if (
+        props.data.logical_field_name === "tax_id_no" &&
+        stageSelector[0].stageInfo.applicants["casa_fatca_declaration_a_1"] ===
+          "Y"
+      ) {
+        setDefaultValue(stageSelector[0].stageInfo.applicants["NRIC_a_1"]);
+        dispatch(
+          isFieldUpdate(
+            props,
+            stageSelector[0].stageInfo.applicants["NRIC_a_1"],
+            props.data.logical_field_name
+          )
+        );
+      } else if (
+        ((props.data.logical_field_name === "embossed_dc_name" &&
+          !stageSelector[0].stageInfo.applicants["embossed_dc_name_a_1"]) ||
+          (props.data.logical_field_name === "embossed_name" &&
+            !stageSelector[0].stageInfo.applicants["embossed_name_a_1"]) ||
+          (props.data.logical_field_name === "embossed_name_2" &&
+            !stageSelector[0].stageInfo.applicants["embossed_name_2_a_1"])) &&
+        new RegExp(props.data.regex).test(
+          stageSelector[0].stageInfo.applicants["full_name_a_1"]
+        )
+      ) {
+        const fullName =
+          fieldValue || stageSelector[0].stageInfo.applicants["full_name_a_1"];
+        if (fullName && fullName.length >= 19) {
+          let firstName = fullName.split(" ")[0];
+          firstName = firstName.length >= 19 ? "" : firstName;
+          embossedNameCounter(firstName);
+          setDefaultValue(firstName);
+          dispatch(
+            isFieldUpdate(props, firstName, props.data.logical_field_name)
+          );
+          props.handleCallback(props.data, firstName);
+        } else {
+          embossedNameCounter(fullName);
+          setDefaultValue(fullName);
+          dispatch(
+            isFieldUpdate(props, fullName, props.data.logical_field_name)
+          );
+          props.handleCallback(props.data, fullName);
+        }
+      } else if (
+        userInputSelector.applicants[props.data.logical_field_name + "_a_1"] !==
+          undefined &&
+        props.data.logical_field_name.substring(0, 9) === "tax_id_no"
+      ) {
+        setDefaultValue(fieldValue);
+        dispatch(
+          isFieldUpdate(
+            props,
+            fieldValue ||
+              userInputSelector.applicants[
+                props.data.logical_field_name + "_a_1"
+              ],
+            props.data.logical_field_name
+          )
+        );
+        props.handleCallback(
+          props.data,
+          userInputSelector.applicants[props.data.logical_field_name + "_a_1"]
+        );
+      } else if (
+        stageSelector[0].stageInfo.applicants[
+          props.data.logical_field_name + "_a_1"
+        ] ||
+        fieldValue
+      ) {
+        setDefaultValue(fieldValue);
+        if (
+          !(stageSelector[0].stageId === "ssf-2" && getUrl.getJourneyType())
+        ) {
+          dispatch(
+            isFieldUpdate(props, fieldValue, props.data.logical_field_name)
+          );
+          props.handleCallback(props.data, fieldValue);
+        } else {
+          dispatch(
+            isFieldUpdate(
+              props,
+              fieldValue ||
+                stageSelector[0].stageInfo.applicants[
+                  props.data.logical_field_name + "_a_1"
+                ],
+              props.data.logical_field_name
+            )
+          );
+          props.handleCallback(
+            props.data,
+            fieldValue ||
+              stageSelector[0].stageInfo.applicants[
+                props.data.logical_field_name + "_a_1"
+              ]
+          );
+        }
+        if (
+          props.data.logical_field_name === "embossed_dc_name" ||
+          props.data.logical_field_name === "embossed_name" ||
+          props.data.logical_field_name === "embossed_name_2"
+        ) {
+          embossedNameCounter(
+            stageSelector[0].stageInfo.applicants[
+              props.data.logical_field_name + "_a_1"
+            ]
+          );
+        }
+      } else if (props.data.logical_field_name === "passport_no") {
+        const passVal =
+          userInputSelector.applicants[
+            props.data.logical_field_name + "_a_1"
+          ] || "";
+        setDefaultValue(passVal);
+        dispatch(isFieldUpdate(props, passVal, props.data.logical_field_name));
+        props.handleCallback(props.data, passVal);
+      } else {
+        if(props.data.logical_field_name !== "referral_id_2"){
+          setDefaultValue(fieldValue);   
+        }  
+        if (
+          !(stageSelector[0].stageId === "ssf-2" && getUrl.getJourneyType())
+        ) {
+          dispatch(
+            isFieldUpdate(props, fieldValue, props.data.logical_field_name)
+          );
+          props.handleCallback(props.data, fieldValue);
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
