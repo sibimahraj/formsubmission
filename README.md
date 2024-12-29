@@ -884,3 +884,297 @@ useEffect(() => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  import { render, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import thunk from "redux-thunk";
+import Text from "./text"; // Adjust the path based on your file structure
+import * as actions from "../../actions"; // Adjust the path based on your file structure
+import React from "react";
+
+// Mock Redux store
+const mockStore = configureStore([thunk]);
+let store: any;
+
+jest.mock("../../actions", () => ({
+  isFieldUpdate: jest.fn(),
+  referralcodeAction: {
+    setReferralId: jest.fn(),
+  },
+}));
+
+describe("Text Component Complex useEffect", () => {
+  let setDefaultValue: jest.Mock;
+  let embossedNameCounter: jest.Mock;
+
+  beforeEach(() => {
+    store = mockStore({
+      referralcodeSelector: {
+        refer: "true",
+        referId: "REF123",
+      },
+      stageSelector: [
+        {
+          stageId: "ssf-2",
+          stageInfo: {
+            applicants: {
+              block_a_1: "Block A",
+              building_name_a_1: "Building B",
+              street_name_a_1: "Street C",
+              postal_code_a_1: "12345",
+              full_name_a_1: "John Doe",
+              NRIC_a_1: "S1234567A",
+              casa_fatca_declaration_a_1: "Y",
+            },
+          },
+        },
+      ],
+      userInputSelector: {
+        applicants: {
+          "tax_id_no_a_1": "987654321",
+        },
+      },
+      getUrl: {
+        getParameterByName: jest.fn().mockReturnValue("resume"),
+        getUpdatedStage: jest.fn().mockReturnValue({
+          updatedStageInputs: [
+            {
+              stageId: "ssf-2",
+              applicants: {
+                "tax_id_no_a_1": "987654321",
+              },
+            },
+          ],
+        }),
+      },
+      resumeSelector: {},
+    });
+
+    setDefaultValue = jest.fn();
+    embossedNameCounter = jest.fn();
+  });
+
+  it("sets referral code when referral_id_2 is true and referId is provided", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={jest.fn()}
+          data={{
+            logical_field_name: "referral_id_2",
+            rwb_label_name: "Referral ID",
+            placeholder: "Referral ID",
+            type: "text",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+          setDefaultValue={setDefaultValue}
+          embossedNameCounter={embossedNameCounter}
+        />
+      </Provider>
+    );
+
+    // Check if referral code is set correctly
+    expect(setDefaultValue).toHaveBeenCalledWith("REF123");
+    expect(actions.referralcodeAction.setReferralId).toHaveBeenCalledWith("REF123");
+  });
+
+  it("sets default value for referral_id_2 when referId is null", () => {
+    store = mockStore({
+      referralcodeSelector: {
+        refer: "true",
+        referId: null,
+      },
+      // other mock data remains the same
+    });
+
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={jest.fn()}
+          data={{
+            logical_field_name: "referral_id_2",
+            rwb_label_name: "Referral ID",
+            placeholder: "Referral ID",
+            type: "text",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+          setDefaultValue={setDefaultValue}
+          embossedNameCounter={embossedNameCounter}
+        />
+      </Provider>
+    );
+
+    // Check if referral code is set to an empty string
+    expect(setDefaultValue).toHaveBeenCalledWith("");
+  });
+
+  it("sets default value for referral_id_2 when auth=resume", () => {
+    store = mockStore({
+      referralcodeSelector: {
+        refer: "true",
+        referId: "REF123",
+      },
+      // other mock data remains the same
+    });
+
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={jest.fn()}
+          data={{
+            logical_field_name: "referral_id_2",
+            rwb_label_name: "Referral ID",
+            placeholder: "Referral ID",
+            type: "text",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+          setDefaultValue={setDefaultValue}
+          embossedNameCounter={embossedNameCounter}
+        />
+      </Provider>
+    );
+
+    // Check if referral code is set correctly when "auth" parameter is "resume"
+    expect(setDefaultValue).toHaveBeenCalledWith("REF123");
+  });
+
+  it("sets address when logical_field_name is residential_address", () => {
+    store = mockStore({
+      stageSelector: [
+        {
+          stageId: "ssf-2",
+          stageInfo: {
+            applicants: {
+              block_a_1: "Block A",
+              building_name_a_1: "Building B",
+              street_name_a_1: "Street C",
+              unit_no_a_1: "101",
+              postal_code_a_1: "12345",
+            },
+          },
+        },
+      ],
+      getUrl: {
+        getParameterByName: jest.fn().mockReturnValue("true"),
+      },
+      // other mock data remains the same
+    });
+
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={jest.fn()}
+          data={{
+            logical_field_name: "residential_address",
+            rwb_label_name: "Residential Address",
+            placeholder: "Residential Address",
+            type: "text",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+          setDefaultValue={setDefaultValue}
+          embossedNameCounter={embossedNameCounter}
+        />
+      </Provider>
+    );
+
+    // Check if residential address is set correctly
+    expect(setDefaultValue).toHaveBeenCalledWith("Block A, Building B, Street C, 101, 12345");
+  });
+
+  it("sets NRIC when logical_field_name is tax_id_no and casa_fatca_declaration_a_1 is Y", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={jest.fn()}
+          data={{
+            logical_field_name: "tax_id_no",
+            rwb_label_name: "Tax ID Number",
+            placeholder: "Tax ID Number",
+            type: "text",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+          setDefaultValue={setDefaultValue}
+          embossedNameCounter={embossedNameCounter}
+        />
+      </Provider>
+    );
+
+    // Check if NRIC is set correctly
+    expect(setDefaultValue).toHaveBeenCalledWith("S1234567A");
+  });
+
+  it("sets default value for embossed name fields", () => {
+    store = mockStore({
+      stageSelector: [
+        {
+          stageId: "ssf-2",
+          stageInfo: {
+            applicants: {
+              full_name_a_1: "John Doe",
+              embossed_name_a_1: "",
+            },
+          },
+        },
+      ],
+      // other mock data remains the same
+    });
+
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={jest.fn()}
+          data={{
+            logical_field_name: "embossed_name",
+            rwb_label_name: "Embossed Name",
+            placeholder: "Embossed Name",
+            type: "text",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+          setDefaultValue={setDefaultValue}
+          embossedNameCounter={embossedNameCounter}
+        />
+      </Provider>
+    );
+
+    // Check if embossed name is set correctly
+    expect(setDefaultValue).toHaveBeenCalledWith("John");
+  });
+
+  it("sets default value when logical_field_name matches tax_id_no or similar", () => {
+    store = mockStore({
+      userInputSelector: {
+        applicants: {
+          "tax_id_no_a_1": "987654321",
+        },
+      },
+      // other mock data remains the same
+    });
+
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={jest.fn()}
+          data={{
+            logical_field_name: "tax_id_no",
+            rwb_label_name: "Tax ID Number",
+            placeholder: "Tax ID Number",
+            type: "text",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+          setDefaultValue={setDefaultValue}
+          embossedNameCounter={embossedNameCounter}
+        />
+      </Provider>
+    );
+
+    // Check if the correct field value is set
+    expect(setDefaultValue).toHaveBeenCalledWith("987654321");
+  });
+});
