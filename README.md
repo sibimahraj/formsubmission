@@ -519,3 +519,29 @@ describe("changeHandler", () => {
       301 |   it("sets error when input has leading or trailing spaces", () => {
 
       at Object.toHaveBeenCalledWith (src/shared/components/text/text.test.tsx:298:26)
+
+       useEffect(() => {
+    let setPostalValue = null;
+    Iif (
+      props.data.logical_field_name === "block" ||
+      props.data.logical_field_name === "building_name" ||
+      props.data.logical_field_name === "street_name"
+    ) {
+      if (props.data.logical_field_name === "block") {
+        setPostalValue = postalCode.block_a_1 || "";
+      } else if (props.data.logical_field_name === "building_name") {
+        setPostalValue = postalCode.building_name_a_1 || "";
+      } else if (props.data.logical_field_name === "street_name") {
+        setPostalValue = postalCode.street_name_a_1 || "";
+      }
+      if (setPostalValue) {
+        setDefaultValue(setPostalValue);
+        props.handleCallback(props.data, setPostalValue);
+        dispatch(isFieldValueUpdate(props, stageSelector, setPostalValue));
+        dispatch(
+          isFieldUpdate(props, setPostalValue, props.data.logical_field_name)
+        );
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postalCode]);
