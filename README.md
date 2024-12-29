@@ -545,3 +545,124 @@ describe("changeHandler", () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postalCode]);
+
+
+  import { render, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import thunk from "redux-thunk";
+import Text from "./text"; // Adjust the path based on your file structure
+import * as actions from "../../actions"; // Adjust the path based on your file structure
+import React from "react";
+
+// Mock Redux store
+const mockStore = configureStore([thunk]);
+const mockHandleFieldDispatch = jest.fn();
+const mockIsFieldValueUpdate = jest.fn();
+const mockIsFieldUpdate = jest.fn();
+let store: any;
+
+jest.mock("../../actions", () => ({
+  isFieldValueUpdate: jest.fn(() => mockIsFieldValueUpdate),
+  isFieldUpdate: jest.fn(() => mockIsFieldUpdate),
+}));
+
+describe("Text Component useEffect", () => {
+  let setDefaultValue: jest.Mock;
+
+  beforeEach(() => {
+    store = mockStore({
+      postalCode: {
+        block_a_1: "Block A",
+        building_name_a_1: "Building B",
+        street_name_a_1: "Street C",
+      },
+    });
+
+    setDefaultValue = jest.fn();
+  });
+
+  it("sets default value and dispatches actions when postal code changes for block", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "block",
+            rwb_label_name: "Block",
+            placeholder: "Block",
+            type: "text",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+          setDefaultValue={setDefaultValue}
+        />
+      </Provider>
+    );
+
+    // Check if setDefaultValue and dispatch are called with correct values
+    expect(setDefaultValue).toHaveBeenCalledWith("Block A");
+    expect(mockHandleFieldDispatch).toHaveBeenCalledWith(
+      { logical_field_name: "block" },
+      "Block A"
+    );
+    expect(mockIsFieldValueUpdate).toHaveBeenCalled();
+    expect(mockIsFieldUpdate).toHaveBeenCalled();
+  });
+
+  it("sets default value and dispatches actions when postal code changes for building_name", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "building_name",
+            rwb_label_name: "Building Name",
+            placeholder: "Building Name",
+            type: "text",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+          setDefaultValue={setDefaultValue}
+        />
+      </Provider>
+    );
+
+    // Check if setDefaultValue and dispatch are called with correct values
+    expect(setDefaultValue).toHaveBeenCalledWith("Building B");
+    expect(mockHandleFieldDispatch).toHaveBeenCalledWith(
+      { logical_field_name: "building_name" },
+      "Building B"
+    );
+    expect(mockIsFieldValueUpdate).toHaveBeenCalled();
+    expect(mockIsFieldUpdate).toHaveBeenCalled();
+  });
+
+  it("sets default value and dispatches actions when postal code changes for street_name", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "street_name",
+            rwb_label_name: "Street Name",
+            placeholder: "Street Name",
+            type: "text",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+          setDefaultValue={setDefaultValue}
+        />
+      </Provider>
+    );
+
+    // Check if setDefaultValue and dispatch are called with correct values
+    expect(setDefaultValue).toHaveBeenCalledWith("Street C");
+    expect(mockHandleFieldDispatch).toHaveBeenCalledWith(
+      { logical_field_name: "street_name" },
+      "Street C"
+    );
+    expect(mockIsFieldValueUpdate).toHaveBeenCalled();
+    expect(mockIsFieldUpdate).toHaveBeenCalled();
+  });
+});
