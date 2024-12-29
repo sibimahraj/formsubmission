@@ -503,4 +503,19 @@ describe("changeHandler", () => {
     expect(mockSetError).toHaveBeenCalledWith("Invalid pattern for Tax ID Number");
   });
 });
- 
+
+  expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "Tax ID Number is required"
+
+    Number of calls: 0
+
+      296 |
+      297 |     // Check if changeHandler logic sets the error correctly
+    > 298 |     expect(mockSetError).toHaveBeenCalledWith("Tax ID Number is required");
+          |                          ^
+      299 |   });
+      300 |
+      301 |   it("sets error when input has leading or trailing spaces", () => {
+
+      at Object.toHaveBeenCalledWith (src/shared/components/text/text.test.tsx:298:26)
