@@ -298,4 +298,209 @@ describe("Text Component", () => {
     expect(input).toHaveValue("");
   });
 });
+
+
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import Text from "./text"; // Adjust the path based on your file structure
+import thunk from "redux-thunk";
+import * as referralcodeAction from "../../actions/referralcodeAction"; // Adjust the path based on your file structure
+import * as validateService from "../../services/validateService"; // Adjust the path based on your file structure
+
+// Mock Redux store
+const mockStore = configureStore([thunk]);
+const mockHandleFieldDispatch = jest.fn();
+let store: any;
+
+describe("changeHandler", () => {
+  let mockSetDefaultValue: jest.Mock;
+  let mockSetError: jest.Mock;
+  let mockEmbossedNameCounter: jest.Mock;
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageId: "ssf-2",
+            stageInfo: {
+              applicants: {
+                tax_id_no_a_1: "123456789",
+                embossed_name_a_1: "John Doe",
+                casa_fatca_declaration_a_1: "Y",
+              },
+            },
+          },
+        ],
+        userInput: {
+          applicants: {
+            annual_income_a_1: "50000",
+            required_loan_amount_a_1: "100000",
+            loan_tenor_a_1: "5",
+          },
+        },
+      },
+      fielderror: {
+        error: [
+          {
+            logical_field_name: "referral_id_2",
+            message: "Invalid referral ID",
+          },
+        ],
+      },
+      postalCode: {
+        postalCode: [
+          {
+            code: "12345",
+          },
+        ],
+      },
+      urlParam: {
+        resume: [
+          {
+            status: "pending",
+          },
+        ],
+      },
+      referralcode: {
+        errormsg: "",
+        referId: "REF123",
+      },
+    });
+
+    mockSetDefaultValue = jest.fn();
+    mockSetError = jest.fn();
+    mockEmbossedNameCounter = jest.fn();
+  });
+
+  it("handles input change and updates the store correctly", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "tax_id_no",
+            rwb_label_name: "Tax ID Number",
+            placeholder: "Tax ID Number",
+            type: "text",
+            min_length: 10,
+            length: 15,
+            regex: "\\d+",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Tax ID Number");
+    expect(input).toBeInTheDocument();
+
+    // Simulate user input
+    fireEvent.change(input, { target: { value: "987654321" } });
+
+    // Check if changeHandler logic works correctly
+    expect(mockEmbossedNameCounter).toHaveBeenCalledWith("987654321");
+    expect(mockSetDefaultValue).toHaveBeenCalledWith("987654321");
+    expect(mockHandleFieldDispatch).toHaveBeenCalledWith(
+      { logical_field_name: "tax_id_no" },
+      "987654321"
+    );
+    expect(mockSetError).toHaveBeenCalledWith("");
+  });
+
+  it("sets error when input is mandatory and empty", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "tax_id_no",
+            rwb_label_name: "Tax ID Number",
+            placeholder: "Tax ID Number",
+            type: "text",
+            min_length: 10,
+            length: 15,
+            regex: "\\d+",
+            mandatory: "Yes",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Tax ID Number");
+    expect(input).toBeInTheDocument();
+
+    // Simulate user input
+    fireEvent.change(input, { target: { value: "" } });
+
+    // Check if changeHandler logic sets the error correctly
+    expect(mockSetError).toHaveBeenCalledWith("Tax ID Number is required");
+  });
+
+  it("sets error when input has leading or trailing spaces", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "tax_id_no",
+            rwb_label_name: "Tax ID Number",
+            placeholder: "Tax ID Number",
+            type: "text",
+            min_length: 10,
+            length: 15,
+            regex: "\\d+",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Tax ID Number");
+    expect(input).toBeInTheDocument();
+
+    // Simulate user input
+    fireEvent.change(input, { target: { value: " 987654321 " } });
+
+    // Check if changeHandler logic sets the error correctly
+    expect(mockSetError).toHaveBeenCalledWith(
+      "Tax ID Number cannot have leading or trailing spaces"
+    );
+  });
+
+  it("sets error when input does not match regex pattern", () => {
+    render(
+      <Provider store={store}>
+        <Text
+          handleFieldDispatch={mockHandleFieldDispatch}
+          data={{
+            logical_field_name: "tax_id_no",
+            rwb_label_name: "Tax ID Number",
+            placeholder: "Tax ID Number",
+            type: "text",
+            min_length: 10,
+            length: 15,
+            regex: "\\d+",
+            editable: true,
+          }}
+          handleCallback={jest.fn()}
+        />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("Tax ID Number");
+    expect(input).toBeInTheDocument();
+
+    // Simulate user input
+    fireEvent.change(input, { target: { value: "abc" } });
+
+    // Check if changeHandler logic sets the error correctly
+    expect(mockSetError).toHaveBeenCalledWith("Invalid pattern for Tax ID Number");
+  });
+});
  
