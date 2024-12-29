@@ -162,3 +162,24 @@ it("calls the correct actions and handles input focus event", () => {
     expect(mockDispatch).toHaveBeenCalledWith(stagesAction.updateAddTaxToggle());
   }
 });
+
+Text Component › calls the correct actions and handles input focus event
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "tax_id_no", "S1234567A", "tax_id_no", "123456789", "tax_id_no"
+    Received
+           1: "tax_id_no", "S1234567A"
+           2: "tax_id_no", "123456789"
+
+    Number of calls: 2
+
+      701 |     // "tax_id_no", "123456789"
+      702 |     // );
+    > 703 |     expect(mockDispatch).toHaveBeenCalledWith( "tax_id_no", "S1234567A" , "tax_id_no", "123456789" ,  fieldName);
+          |                          ^
+      704 |
+      705 |     // Ensure specific actions for tax_id_no field are dispatched
+      706 |     if (fieldName === "tax_id_no") {
+
+      at Object.toHaveBeenCalledWith (src/shared/components/text/text.test.tsx:703:26)
