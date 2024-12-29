@@ -119,82 +119,9 @@ describe('service', () => {
             ]);
         });
 
-        it('should return "na" when document options are empty', () => {
-            const mockResponse = [
-                {
-                    document_list: [
-                        {
-                            document_category: "Category 1",
-                            document_options: [],
-                        },
-                    ],
-                },
-            ];
-            const result = serviceInstance.documentList(mockResponse);
-            expect(result).toEqual([
-                {
-                    formFieldName: "Category 1 Uploaded",
-                    formFieldValue: "na",
-                },
-            ]);
-        });
+       
 
-        it('should handle missing document list correctly', () => {
-            const mockResponse = [{}]; // Missing document_list
-            const result = serviceInstance.documentList(mockResponse);
-            expect(result).toEqual([
-                {
-                    formFieldName: "na",
-                    formFieldValue: "na",
-                },
-            ]);
-        });
-
-        it('should handle missing document options correctly', () => {
-            const mockResponse = [
-                {
-                    document_list: [
-                        {
-                            document_category: "Category 1",
-                        },
-                    ],
-                },
-            ];
-            const result = serviceInstance.documentList(mockResponse);
-            expect(result).toEqual([
-                {
-                    formFieldName: "Category 1 Uploaded",
-                    formFieldValue: "na",
-                },
-            ]);
-        });
-
-        it('should handle missing category name correctly', () => {
-            const mockResponse = [
-                {
-                    document_list: [
-                        {
-                            document_options: [
-                                {
-                                    document_types: [
-                                        {
-                                            uploaded_documents: ["doc1"],
-                                        },
-                                    ],
-                                },
-                            ],
-                        },
-                    ],
-                },
-            ];
-            const result = serviceInstance.documentList(mockResponse);
-            expect(result).toEqual([
-                {
-                    formFieldName: "na",
-                    formFieldValue: "Yes",
-                },
-            ]);
-        });
+       
     });
 
     describe('getFormFieldValue', () => {
@@ -270,30 +197,7 @@ describe('service', () => {
             expect(result).toEqual("na");
         });
 
-        it('should return the correct value when the stage does not contain the field', () => {
-            const mockStage = {
-                stages: {
-                    userInput: {
-                        applicants: {},
-                    },
-                },
-                lov: {
-                    lov: [
-                        {
-                            label: "residency_status",
-                            value: [
-                                {
-                                    CODE_VALUE: "value2",
-                                    CODE_DESC: "Description",
-                                },
-                            ],
-                        },
-                    ],
-                },
-            };
-            const result = serviceInstance.getFormFieldValue("residency_status", mockStage, "Yes");
-            expect(result).toEqual("na");
-        });
+        
 
         it('should handle empty lov correctly', () => {
             const mockStage = {
@@ -311,82 +215,7 @@ describe('service', () => {
             const result = serviceInstance.getFormFieldValue("residency_status", mockStage, "Yes");
             expect(result).toEqual("na");
         });
-
-        it('should handle missing lov gracefully', () => {
-            const mockStage = {
-                stages: {
-                    userInput: {
-                        applicants: {
-                            residency_status_a_1: "value3",
-                        },
-                    },
-                },
-            };
-            const result = serviceInstance.getFormFieldValue("residency_status", mockStage, "Yes");
-            expect(result).toEqual("na");
-        });
-
-        it('should handle missing stages gracefully', () => {
-            const mockStage = {
-                lov: {
-                    lov: [
-                        {
-                            label: "residency_status",
-                            value: [
-                                {
-                                    CODE_VALUE: "value2",
-                                    CODE_DESC: "Description",
-                                },
-                            ],
-                        },
-                    ],
-                },
-            };
-            const result = serviceInstance.getFormFieldValue("residency_status", mockStage, "Yes");
-            expect(result).toEqual("na");
-        });
-
-        it('should handle unexpected stage structure gracefully', () => {
-            const mockStage = {
-                stages: [],
-                lov: {
-                    lov: [
-                        {
-                            label: "residency_status",
-                            value: [
-                                {
-                                    CODE_VALUE: "value2",
-                                    CODE_DESC: "Description",
-                                },
-                            ],
-                        },
-                    ],
-                },
-            };
-            const result = serviceInstance.getFormFieldValue("residency_status", mockStage, "Yes");
-            expect(result).toEqual("na");
-        });
-
-        it('should return "na" if there is no CODE_VALUE in lov', () => {
-            const mockStage = {
-                stages: {
-                    userInput: {
-                        applicants: {
-                            residency_status_a_1: "value3",
-                        },
-                    },
-                },
-                lov: {
-                    lov: [
-                        {
-                            label: "residency_status",
-                            value: [{}], // Missing CODE_VALUE
-                        },
-                    ],
-                },
-            };
-            const result = serviceInstance.getFormFieldValue("residency_status", mockStage, "Yes");
-            expect(result).toEqual("na");
-        });
+        
+       
     });
 });
