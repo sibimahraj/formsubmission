@@ -103,3 +103,62 @@ const bindHandler = (
   bindHandler("tax_id_no_a_1", longTaxIdEvent);
   expect(mockDispatch).toHaveBeenCalledWith(stagesAction.updateAddTaxToggle());
 });
+
+it("calls the correct actions and handles input focus event", () => {
+  const mockHandleCallback = jest.fn();
+  const mockDispatch = jest.fn();
+  const mockStageSelector = [
+    {
+      stageId: "ssf-2",
+      stageInfo: {
+        applicants: {},
+      },
+    },
+  ];
+
+  const fieldName = "tax_id_no";
+  const event = {
+    target: {
+      value: "987654321",
+      validity: { valid: true },
+    },
+  };
+
+  render(
+    <Provider store={store}>
+      <Text
+        handleFieldDispatch={mockDispatch}
+        data={{
+          logical_field_name: fieldName,
+          rwb_label_name: "Tax ID Number",
+          placeholder: "Tax ID Number",
+          type: "text",
+          min_length: 10,
+          length: 15,
+          regex: "\\d+",
+          editable: true,
+        }}
+        handleCallback={mockHandleCallback}
+      />
+    </Provider>
+  );
+
+  // Trigger the bindHandler logic
+  bindHandler(fieldName, event as any);
+
+  // Ensure handleCallback is called with correct arguments
+  expect(mockHandleCallback).toHaveBeenCalledWith({ logical_field_name: fieldName, rwb_label_name: "Tax ID Number" }, "987654321");
+
+  // Ensure actions are dispatched with correct field values
+  expect(mockDispatch).toHaveBeenCalledWith(isFieldValueUpdate({ logical_field_name: fieldName }, mockStageSelector, "987654321"));
+  expect(mockDispatch).toHaveBeenCalledWith(isFieldUpdate({ logical_field_name: fieldName }, "987654321", fieldName));
+
+  // Ensure specific actions for tax_id_no field are dispatched
+  if (fieldName === "tax_id_no") {
+    expect(mockDispatch).toHaveBeenCalledWith(stagesAction.updateTaxToggle());
+  }
+
+  if (fieldName.substring(0, 9) === "tax_id_no" && fieldName.length > 9) {
+    expect(mockDispatch).toHaveBeenCalledWith(stagesAction.updateAddTaxToggle());
+  }
+});
