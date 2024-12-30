@@ -1,31 +1,139 @@
- documentList = (docResponse: KeyWithAnyModel) => {
-        let fields = [];
-        if (docResponse.length > 0) {
-            docResponse.forEach((docResp: KeyWithAnyModel) => {
-                Eif(docResp && docResp.document_list){
-                    docResp.document_list.forEach((document_list: KeyWithAnyModel) => {
-                        Eif(document_list && document_list.document_options){
-                            document_list.document_options.forEach((document_options: KeyWithAnyModel) => {
-                                Eif(document_options && document_options.document_types){
-                                    document_options.document_types.forEach((document_types: KeyWithAnyModel) => {
-                                        Eif(document_types.uploaded_documents){
-                                            fields.push({
-                                                formFieldName: `${document_list.document_category} Uploaded`,
-                                                formFieldValue: (document_types.uploaded_documents.length > 0) ? 'Yes' : 'No'
-                                            }) 
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-        } else {
-            fields.push({
-                formFieldName: 'na',
-                formFieldValue: "na"
-            })
-        }
-        return fields;
-    }
+describe('documentList', () => {
+    it('should return "na" when docResponse is empty', () => {
+        const mockResponse: any = [];
+        const result = serviceInstance.documentList(mockResponse);
+        expect(result).toEqual([
+            { formFieldName: 'na', formFieldValue: 'na' },
+        ]);
+    });
+
+    it('should handle missing document_list gracefully', () => {
+        const mockResponse = [{ document_list: null }];
+        const result = serviceInstance.documentList(mockResponse);
+        expect(result).toEqual([]);
+    });
+
+    it('should handle missing document_options gracefully', () => {
+        const mockResponse = [
+            {
+                document_list: [
+                    { document_category: 'Category 1', document_options: null },
+                ],
+            },
+        ];
+        const result = serviceInstance.documentList(mockResponse);
+        expect(result).toEqual([]);
+    });
+
+    it('should handle missing document_types gracefully', () => {
+        const mockResponse = [
+            {
+                document_list: [
+                    {
+                        document_category: 'Category 1',
+                        document_options: [{ document_types: null }],
+                    },
+                ],
+            },
+        ];
+        const result = serviceInstance.documentList(mockResponse);
+        expect(result).toEqual([]);
+    });
+
+    it('should handle missing uploaded_documents gracefully', () => {
+        const mockResponse = [
+            {
+                document_list: [
+                    {
+                        document_category: 'Category 1',
+                        document_options: [
+                            { document_types: [{ uploaded_documents: null }] },
+                        ],
+                    },
+                ],
+            },
+        ];
+        const result = serviceInstance.documentList(mockResponse);
+        expect(result).toEqual([]);
+    });
+
+    it('should return correct fields when uploaded_documents exist', () => {
+        const mockResponse = [
+            {
+                document_list: [
+                    {
+                        document_category: 'Category 1',
+                        document_options: [
+                            {
+                                document_types: [
+                                    { uploaded_documents: ['doc1', 'doc2'] },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+        ];
+        const result = serviceInstance.documentList(mockResponse);
+        expect(result).toEqual([
+            { formFieldName: 'Category 1 Uploaded', formFieldValue: 'Yes' },
+        ]);
+    });
+
+    it('should return "No" when uploaded_documents is an empty array', () => {
+        const mockResponse = [
+            {
+                document_list: [
+                    {
+                        document_category: 'Category 1',
+                        document_options: [
+                            {
+                                document_types: [
+                                    { uploaded_documents: [] },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+        ];
+        const result = serviceInstance.documentList(mockResponse);
+        expect(result).toEqual([
+            { formFieldName: 'Category 1 Uploaded', formFieldValue: 'No' },
+        ]);
+    });
+
+    it('should process multiple categories correctly', () => {
+        const mockResponse = [
+            {
+                document_list: [
+                    {
+                        document_category: 'Category 1',
+                        document_options: [
+                            {
+                                document_types: [
+                                    { uploaded_documents: ['doc1'] },
+                                ],
+                            },
+                        ],
+                    },
+                    {
+                        document_category: 'Category 2',
+                        document_options: [
+                            {
+                                document_types: [
+                                    { uploaded_documents: ['doc2'] },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+        ];
+        const result = serviceInstance.documentList(mockResponse);
+        expect(result).toEqual([
+            { formFieldName: 'Category 1 Uploaded', formFieldValue: 'Yes' },
+            { formFieldName: 'Category 2 Uploaded', formFieldValue: 'Yes' },
+        ]);
+    });
+});
