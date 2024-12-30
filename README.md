@@ -450,7 +450,42 @@ describe('triggerAdobeEvent', () => {
       82 |     /*istanbul ignore else */
       83 |     if (store) {
     > 84 |       return new URLSearchParams(store.getState().urlParam.urlParams).get(name);
-         |                                                           ^
+         |       
+         
+         
+          getProductInfo = (stage: KeyWithAnyModel) => {
+        //add doc upload for resume 
+        if(getUrl.getParameterByName("auth") !== "upload" && !store.getState().stages.isDocumentUpload){
+        let info: Array<{}> = [];
+        let formName = '';
+        let productCategory = '';
+        let productName = '';
+        const products = stage.stages.stages[0].stageInfo.products;
+        products.forEach((product: KeyWithAnyModel) => {
+            const formNameCheck = product.product_category === 'CC' || product.product_category === 'PL' ? 'SG_CCPL' : 'SG_CASA';
+        info.push({
+                productInfo: {
+                    productName: product.name,
+                    productID: product.product_type,
+                    productCategory: product.product_category,
+                    productSubCategory: 'na',
+                }
+            });
+            info.push({
+                formInfo: {
+                        formName : formName ? (formName + '|' + formNameCheck) : formNameCheck,
+                        productCategory : productCategory ? (productCategory + '|' + product.product_category) : product.product_category,
+                      productName : productName ? (productName + '|' + product.name) : product.name
+                }
+            })
+        });
+ 
+    return info;
+    }
+    else{
+        return[]; 
+    } 
+ }      
       85 |     }
       86 |   },
       87 |   getProductInfo() {
