@@ -150,3 +150,160 @@ describe("getFormFieldsByScreenName", () => {
         expect(serviceInstance.getFormFields).not.toHaveBeenCalled();
     });
 });
+
+
+
+
+
+
+
+triggerAdobeEvent = (eventName: string, buttonName?: string, docResponse?: KeyWithAnyModel, errType?: string) => {
+        if(getUrl.getParameterByName("auth") !== "upload" && !store.getState().stages.isDocumentUpload){
+        const stage = store.getState();
+        const appRefNo = getUrl.getChannelRefNo().applicationRefNo;
+        if (stage && stage.stages && stage.stages.stages && stage.stages.stages.length > 0 && stage.stages.stages[0].stageInfo) {
+            let stepName = getStepName(stage);
+            let dataLayer: KeyWithAnyModel = this.getAdobeDataLayer(eventName, stage, stepName);
+            if (eventName === 'formStart') {
+                dataLayer.page.attributes.pfm = loginval();
+                if (!(window.sessionStorage.isFromFFF === "true")) {
+                    const aggregator_code = (stage.urlParam && stage.urlParam.aggregators && stage.urlParam.aggregators.aggregator_code) ? stage.urlParam.aggregators.aggregator_code : 'na';
+                    const aggregator_type = (stage.urlParam && stage.urlParam.aggregators && stage.urlParam.aggregators.aggregator_type) ? stage.urlParam.aggregators.aggregator_type : 'na';
+                    const aggregator_instance = (stage.urlParam && stage.urlParam.aggregators && stage.urlParam.aggregators.aggregator_instance) ? stage.urlParam.aggregators.aggregator_instance : 'na';
+                    const intcid = localStorage.getItem("intcid") ? localStorage.getItem("intcid") : 'na';
+                    if (intcid !== 'na') {
+                        localStorage.removeItem("intcid");
+                    }
+                    const subchancode = 'na'
+                    const refid = 'na'
+                    const referId = 'na'
+                    const instance = 'na'
+                    const camp_id = 'na'
+                    const pid = 'na'
+                    const promoCode = 'na'
+                    const promo = 'na'
+                    const state = 'na'
+                    dataLayer.campaign = {
+                        internal: {
+                            campaignName: 'aggregator_code:aggregator_type:aggregator_instance:intcid:subchancode:refid:referId:instance:camp_id:pid:promoCode:promo:state',
+                            campaignValue: aggregator_code + ':' + aggregator_type + ':' + aggregator_instance + ':' + intcid + ':' + subchancode + ':' + refid + ':' + referId + ':' + instance + ':' + camp_id + ':' + pid + ':' + promoCode + ':' + promo + ':' + state
+                        }
+                    }
+                } else {
+                    delete window.sessionStorage.isFromFFF;
+                }
+                window.adobeDataLayer.push(dataLayer);
+            }
+            else if (eventName === 'ctaClick') {
+                const popupName = errType;
+                if (buttonName === 'Continue') {
+                    const stageId = stage.stages.stages[0].stageId;
+                    if (stageId !== 'doc') {
+                        dataLayer.form.formFields = this.getFormFieldsByScreenName(stage)
+                    } else if (stageId === 'doc' && docResponse) {
+                        dataLayer.form.formFields = this.documentList(docResponse);
+                    }
+                    if (stageId === 'rp') {
+                        buttonName = 'Agree and Submit';
+                    }
+                }
+                dataLayer.customLinkClick = {
+                    'customLinkText': buttonName,
+                    'customLinkRegion': buttonName === 'Login' ? 'top' : 'bottom',
+                    'customLinkType': 'button'
+                }
+                if(popupName){
+                    dataLayer.form.popupName = popupName;
+                }
+                window.adobeDataLayer.push(dataLayer);
+            }
+            else if (eventName === 'formStepCompletions') {
+                dataLayer.form.refNum = appRefNo !== null ? appRefNo : 'na';
+                dataLayer.form.formFields = [
+                    {
+                        formFieldValue: 'na',
+                        formFieldName: 'na'
+                    }];
+                window.adobeDataLayer.push(dataLayer);
+            }
+            else if (eventName === 'formSubmit' && !window.adobeDataLayer.find((eachEvent: KeyWithAnyModel) => eachEvent.event === 'formSubmit')) {
+                dataLayer.form.refNum = appRefNo !== null ? appRefNo : 'na';
+                dataLayer.form.appStatus = 'Complete';
+                if (stage.stages.userInput.applicants.insurance_consent_a_1) {
+                    dataLayer.form.formFields = [
+                        {
+                            formFieldValue: stage.stages.userInput.applicants.insurance_consent_a_1 === 'Y' ? 'Yes' : 'No',
+                            formFieldName: 'Insurance product selected'
+                        }];
+                }
+                else {
+                    dataLayer.form.formFields = [
+                        {
+                            formFieldValue: 'na',
+                            formFieldName: 'na'
+                        }];
+                }
+                window.adobeDataLayer.push(dataLayer);
+            }
+            else if (eventName === 'formAbandonment' && !window.adobeDataLayer.find((eachEvent: KeyWithAnyModel) => ( eachEvent.event === 'formSubmit' || eachEvent.event === 'formAbandonment'))) {
+                dataLayer.form.refNum = appRefNo !== null ? appRefNo : 'na';
+                dataLayer.form.formLastAccessedField = stage.lastAccessed.fieldFocused ? stage.lastAccessed.fieldFocused : 'na';
+                dataLayer.form.formFields = [
+                    {
+                        formFieldValue: 'na',
+                        formFieldName: 'na'
+                    }];
+                dataLayer.customLinkClick = {
+                    'customLinkText': buttonName,
+                    'customLinkRegion': buttonName === 'Login' ? 'top' : 'bottom',
+                    'customLinkType': 'button'
+                }
+                window.adobeDataLayer.push(dataLayer);
+            }
+            else if (eventName === 'formError') {
+                const error = store.getState().error.errors;
+                const exception: KeyWithAnyModel = store.getState().error.exceptionList;
+                dataLayer.form.refNum = appRefNo !== null ? appRefNo : 'na';
+                if (error.length > 0) {
+                    dataLayer.error = [{
+                        errorCode: error[0].statusCode ? error[0].statusCode : exception[0].error_type ? exception[0].error_type : 'na',
+                        errorField: stepName,
+                        errorDescription: error[0].statusText ? error[0].statusText : exception[0].status ? exception[0].status : 'na'
+                    }]
+                } 
+                else if(exception && exception.errorList && exception.errorList.errors && exception.errorList.errors.length > 0){
+                    dataLayer.error = [{
+                        errorCode: exception.errorList.errors[0].code ? exception.errorList.errors[0].code : 'na',
+                        errorField: stepName,
+                        errorDescription: exception.errorList.errors[0].detail ? exception.errorList.errors[0].detail : exception.error_header
+                    }]
+                }  else {
+                    dataLayer.error = [{
+                        errorCode: 'na',
+                        errorField: stepName,
+                        errorDescription: 'na'
+                    }]
+                }
+                dataLayer.customLinkClick = {
+                    customLinkText: errType ? getErrorType(errType.toUpperCase()) : 'na',
+                    customLinkRegion: 'bottom',
+                    customLinkType: 'button'
+                }
+                window.adobeDataLayer.push(dataLayer);
+            }
+            else if (eventName === 'popupViewed') {
+                const lastEvent: KeyWithAnyModel =  window.adobeDataLayer[window.adobeDataLayer.length-1];
+                if (!lastEvent || (lastEvent && lastEvent.event !== 'popupViewed')) {
+                    dataLayer.form.refNum = appRefNo !== null ? appRefNo : 'na';
+                    dataLayer.form.formFields = [{
+                        formFieldValue: 'na',
+                        formFieldName: 'na'
+                    }];
+                    dataLayer.form.popupName = buttonName ? buttonName : 'na'
+                    window.adobeDataLayer.push(dataLayer);
+                }
+            }
+           
+        }
+    }
+}
