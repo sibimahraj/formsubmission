@@ -432,3 +432,15 @@ describe('triggerAdobeEvent', () => {
         expect(global.window.adobeDataLayer.length).toBe(0);
     });
 });
+
+ TypeError: _change.getUrl.getParameterByName.mockReturnValue is not a function
+
+      72 |
+      73 |     beforeEach(() => {
+    > 74 |        (getUrl.getParameterByName as jest.Mock).mockReturnValue('value');
+         |                                                 ^
+      75 |        (getUrl.getChannelRefNo as jest.Mock).mockReturnValue(mockUrl);
+      76 |         (store.getState as jest.Mock).mockReturnValue(mockStage);
+      77 |     });
+
+      at Object.mockReturnValue (src/services/track-events.test.ts:74:49)
