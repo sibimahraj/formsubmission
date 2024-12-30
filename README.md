@@ -444,3 +444,17 @@ describe('triggerAdobeEvent', () => {
       77 |     });
 
       at Object.mockReturnValue (src/services/track-events.test.ts:74:49)
+
+       TypeError: Cannot read properties of undefined (reading 'urlParams')
+
+      82 |     /*istanbul ignore else */
+      83 |     if (store) {
+    > 84 |       return new URLSearchParams(store.getState().urlParam.urlParams).get(name);
+         |                                                           ^
+      85 |     }
+      86 |   },
+      87 |   getProductInfo() {
+
+      at Object.getParameterByName (src/utils/common/change.utils.ts:84:59)
+      at service.getParameterByName [as triggerAdobeEvent] (src/services/track-events.ts:124:19)
+      at Object.triggerAdobeEvent (src/services/track-events.test.ts:841:25)
