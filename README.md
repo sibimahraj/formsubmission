@@ -307,3 +307,128 @@ triggerAdobeEvent = (eventName: string, buttonName?: string, docResponse?: KeyWi
         }
     }
 }
+
+
+import trackEvents from './track-events';
+import { store } from '../utils/store/store';
+import { getUrl } from '../utils/common/change.utils';
+
+jest.mock('../utils/store/store', () => ({
+    store: {
+        getState: jest.fn(),
+    },
+}));
+jest.mock('../utils/common/change.utils', () => ({
+    getUrl: {
+        getParameterByName: jest.fn(),
+        getChannelRefNo: jest.fn(),
+    },
+}));
+
+describe('triggerAdobeEvent', () => {
+    let serviceInstance: any;
+
+    beforeEach(() => {
+        serviceInstance = new trackEvents();
+        global.window.adobeDataLayer = [];
+        jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+        global.window.adobeDataLayer = [];
+    });
+
+    const mockStage = {
+        stages: {
+            isDocumentUpload: false,
+            stages: [
+                {
+                    stageId: 'doc',
+                    stageInfo: {},
+                },
+            ],
+            userInput: {
+                applicants: {
+                    insurance_consent_a_1: 'Y',
+                },
+            },
+        },
+        lastAccessed: {
+            fieldFocused: 'someField',
+        },
+        error: {
+            errors: [{ statusCode: 400, statusText: 'Bad Request' }],
+            exceptionList: {
+                errorList: {
+                    errors: [{ code: 'ERR01', detail: 'Invalid Data' }],
+                },
+                error_header: 'Validation Error',
+            },
+        },
+    };
+
+    const mockUrl = {
+        applicationRefNo: '12345',
+    };
+
+    beforeEach(() => {
+        getUrl.getParameterByName.mockReturnValue('value');
+        getUrl.getChannelRefNo.mockReturnValue(mockUrl);
+        store.getState.mockReturnValue(mockStage);
+    });
+
+    it('should handle "formStart" event', () => {
+        serviceInstance.triggerAdobeEvent('formStart');
+        expect(global.window.adobeDataLayer.length).toBe(1);
+        expect(global.window.adobeDataLayer[0]).toHaveProperty('campaign');
+    });
+
+    it('should handle "ctaClick" event with Continue button', () => {
+        serviceInstance.triggerAdobeEvent('ctaClick', 'Continue');
+        expect(global.window.adobeDataLayer.length).toBe(1);
+        expect(global.window.adobeDataLayer[0]).toHaveProperty('customLinkClick');
+    });
+
+    it('should handle "formSubmit" event', () => {
+        serviceInstance.triggerAdobeEvent('formSubmit');
+        expect(global.window.adobeDataLayer.length).toBe(1);
+        expect(global.window.adobeDataLayer[0].form.appStatus).toBe('Complete');
+    });
+
+    it('should handle "formAbandonment" event', () => {
+        serviceInstance.triggerAdobeEvent('formAbandonment');
+        expect(global.window.adobeDataLayer.length).toBe(1);
+        expect(global.window.adobeDataLayer[0].form.formLastAccessedField).toBe('someField');
+    });
+
+    it('should handle "formError" event with error data', () => {
+        serviceInstance.triggerAdobeEvent('formError');
+        expect(global.window.adobeDataLayer.length).toBe(1);
+        expect(global.window.adobeDataLayer[0].error[0].errorCode).toBe('400');
+    });
+
+    it('should handle "formError" event with exception data', () => {
+        mockStage.error.errors = [];
+        serviceInstance.triggerAdobeEvent('formError');
+        expect(global.window.adobeDataLayer.length).toBe(1);
+        expect(global.window.adobeDataLayer[0].error[0].errorCode).toBe('ERR01');
+    });
+
+    it('should handle "popupViewed" event', () => {
+        serviceInstance.triggerAdobeEvent('popupViewed', 'Sample Popup');
+        expect(global.window.adobeDataLayer.length).toBe(1);
+        expect(global.window.adobeDataLayer[0].form.popupName).toBe('Sample Popup');
+    });
+
+    it('should skip event when "auth" is "upload"', () => {
+        getUrl.getParameterByName.mockReturnValue('upload');
+        serviceInstance.triggerAdobeEvent('formStart');
+        expect(global.window.adobeDataLayer.length).toBe(0);
+    });
+
+    it('should skip event when "isDocumentUpload" is true', () => {
+        mockStage.stages.isDocumentUpload = true;
+        serviceInstance.triggerAdobeEvent('formStart');
+        expect(global.window.adobeDataLayer.length).toBe(0);
+    });
+});
