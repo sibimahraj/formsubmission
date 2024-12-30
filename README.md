@@ -527,3 +527,133 @@ describe('triggerAdobeEvent', () => {
     else{
         return[]; 
     } 
+
+
+describe("getProductInfo", () => {
+    let serviceInstance: any;
+
+    beforeEach(() => {
+        serviceInstance = new trackEvents(); // Replace with the correct class/instance initialization
+        jest.spyOn(store, "getState").mockReturnValue({
+            stages: {
+                isDocumentUpload: false,
+            },
+        });
+        jest.spyOn(getUrl, "getParameterByName").mockImplementation((param) => {
+            if (param === "auth") return "not-upload";
+            return null;
+        });
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it("should return product and form info for valid stage", () => {
+        const mockStage = {
+            stages: {
+                stages: [
+                    {
+                        stageInfo: {
+                            products: [
+                                {
+                                    name: "Product 1",
+                                    product_type: "PT1",
+                                    product_category: "CC",
+                                },
+                                {
+                                    name: "Product 2",
+                                    product_type: "PT2",
+                                    product_category: "PL",
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        };
+
+        const result = serviceInstance.getProductInfo(mockStage);
+
+        expect(result).toEqual([
+            {
+                productInfo: {
+                    productName: "Product 1",
+                    productID: "PT1",
+                    productCategory: "CC",
+                    productSubCategory: "na",
+                },
+            },
+            {
+                formInfo: {
+                    formName: "SG_CCPL",
+                    productCategory: "CC",
+                    productName: "Product 1",
+                },
+            },
+            {
+                productInfo: {
+                    productName: "Product 2",
+                    productID: "PT2",
+                    productCategory: "PL",
+                    productSubCategory: "na",
+                },
+            },
+            {
+                formInfo: {
+                    formName: "SG_CCPL|SG_CCPL",
+                    productCategory: "CC|PL",
+                    productName: "Product 1|Product 2",
+                },
+            },
+        ]);
+    });
+
+    it("should return an empty array if auth is 'upload'", () => {
+        jest.spyOn(getUrl, "getParameterByName").mockReturnValue("upload");
+        const mockStage = {
+            stages: {
+                stages: [],
+            },
+        };
+
+        const result = serviceInstance.getProductInfo(mockStage);
+
+        expect(result).toEqual([]);
+    });
+
+    it("should return an empty array if isDocumentUpload is true", () => {
+        jest.spyOn(store, "getState").mockReturnValue({
+            stages: {
+                isDocumentUpload: true,
+            },
+        });
+        const mockStage = {
+            stages: {
+                stages: [],
+            },
+        };
+
+        const result = serviceInstance.getProductInfo(mockStage);
+
+        expect(result).toEqual([]);
+    });
+
+    it("should handle stages with no products gracefully", () => {
+        const mockStage = {
+            stages: {
+                stages: [
+                    {
+                        stageInfo: {
+                            products: [],
+                        },
+                    },
+                ],
+            },
+        };
+
+        const result = serviceInstance.getProductInfo(mockStage);
+
+        expect(result).toEqual([]);
+    });
+});
