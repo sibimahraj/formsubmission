@@ -1116,3 +1116,13 @@ describe("GA Track Events Service", () => {
 //     });
 //   });
 });
+
+TypeError: props.handleFieldDispatch is not a function
+
+      13 | ): any => {
+      14 |   return (_dispatch: AppDispatch) => {
+    > 15 |     props.handleFieldDispatch(fieldName, fieldValue);
+         |           ^
+      16 |   };
+      17 | };
+      18 |
