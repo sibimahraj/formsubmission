@@ -367,3 +367,58 @@ const tax = createSlice({
 });
 export const taxAction = tax.actions;
 export default tax;
+
+
+import { createSlice } from "@reduxjs/toolkit";
+import { taxStoreModel } from "../model/common-model";
+
+const initialState: taxStoreModel = {
+  maxCount: 5,
+  count: 0,
+  fields: [],
+};
+
+const tax = createSlice({
+  name: "tax",
+  initialState,
+  reducers: {
+    addTaxFiled(state, action) {
+      if (!state.fields.includes(action.payload)) {
+        state.fields.push(action.payload);
+      }
+    },
+    updateCount(state, action) {
+      state.count = action.payload;
+    },
+    removeTaxField(state, action) {
+      const findIndex = state.fields.findIndex((field: string) => field === action.payload);
+      if (findIndex !== -1) {
+        state.fields.splice(findIndex, 1); // Remove only the exact field
+      }
+    },
+    updateTax(state, action) {
+      if (action.payload) {
+        state.fields = []; // Reset fields before updating
+        let count = 0;
+
+        for (let i = 1; i <= 5; i++) {
+          const countryField = `country_of_tax_residence_${i}_a_1`;
+          if (action.payload[countryField]) {
+            count++;
+            state.fields.push(`country_of_tax_residence_${i}`);
+            state.fields.push(`tax_id_no_${i}`);
+            state.fields.push(`crs_reason_code_${i}`);
+          }
+        }
+        state.count = count;
+      }
+    },
+    resetTaxField(state) {
+      state.count = 0;
+      state.fields = [];
+    },
+  },
+});
+
+export const taxAction = tax.actions;
+export default tax;
