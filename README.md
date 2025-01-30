@@ -422,3 +422,103 @@ const tax = createSlice({
 
 export const taxAction = tax.actions;
 export default tax;
+
+
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { taxAction } from "../redux/slices/tax";
+import Alias from "./Alias";
+import Tax from "./Tax";
+import Model from "./Model";
+
+const Toggle = (props) => {
+  const dispatch = useDispatch();
+  const userInputSelector = useSelector((state) => state.userInput);
+  const taxSelector = useSelector((state) => state.tax);
+  const aliasSelector = useSelector((state) => state.alias);
+
+  const [defaultValue, setDefaultValue] = useState(false);
+  const [showInfoPopup, setShowInfoPopup] = useState(false);
+
+  const onToggle = () => {
+    setDefaultValue(true);
+    dispatch(isFieldUpdate(props, "Y", props.data.logical_field_name));
+
+    if (props.data.logical_field_name === "other_name_or_alias" && aliasSelector?.count < 1) {
+      dispatch(fieldErrorAction.getMandatoryFields(["alias_1"]));
+      dispatch(aliasAction.addAliasField("alias_1"));
+      dispatch(aliasAction.updateCount(1));
+    } else if (props.data.logical_field_name === "tax_resident_of_other_country") {
+      dispatch(fieldErrorAction.getMandatoryFields(["no_of_tax_residency_country"]));
+      dispatch(taxAction.addTaxFiled("no_of_tax_residency_country"));
+      dispatch(taxAction.updateCount(1));
+    }
+  };
+
+  useEffect(() => {
+    const numberOfCountries = userInputSelector.applicants["no_of_tax_residency_country_a_1"];
+    
+    if (numberOfCountries) {
+      let updatedFields = [];
+      for (let i = 1; i <= Number(numberOfCountries); i++) {
+        updatedFields.push(`country_of_tax_residence_${i}`);
+      }
+
+      dispatch(taxAction.resetTaxField());
+      updatedFields.forEach((field) => dispatch(taxAction.addTaxFiled(field)));
+    }
+  }, [userInputSelector.applicants["no_of_tax_residency_country_a_1"]]);
+
+  useEffect(() => {
+    let updatedFields = [];
+
+    for (let i = 1; i <= 5; i++) {
+      const countryField = `country_of_tax_residence_${i}_a_1`;
+      if (userInputSelector.applicants[countryField]) {
+        updatedFields.push(`tax_id_no_${i}`);
+        updatedFields.push(`crs_reason_code_${i}`);
+      }
+    }
+
+    dispatch(taxAction.resetTaxField());
+    updatedFields.forEach((field) => dispatch(taxAction.addTaxFiled(field)));
+  }, [userInputSelector.applicants]);
+
+  return (
+    <>
+      {!(stageId === "ssf-2" && journeyType) && (
+        <div className="toggle__content">
+          <div className="toggle__content__inner">
+            <div className="toggle__desc">{props.data.rwb_label_name}</div>
+            <div className="toggle__button__block">
+              <div className="toggle__button" onClick={onToggle}>
+                <input type="checkbox" checked={defaultValue} readOnly />
+                <span className="toggle__slider"></span>
+              </div>
+            </div>
+            <span className="radio__header">
+              {props.data.info_tooltips === "Yes" &&
+                props.data.logical_field_name !== "casa_fatca_declaration" && (
+                  <div className="tool-tip__icon">
+                    <span className="tool-tip" onClick={() => setShowInfoPopup(true)}></span>
+                  </div>
+                )}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {defaultValue && props.data.logical_field_name === "other_name_or_alias" && (
+        <Alias handleCallback={props.handleCallback} handleFieldDispatch={props.handleFieldDispatch} value={props.value} />
+      )}
+
+      {defaultValue && props.data.logical_field_name === "tax_resident_of_other_country" && (
+        <Tax handleCallback={props.handleCallback} handleFieldDispatch={props.handleFieldDispatch} props={props} />
+      )}
+
+      {showInfoPopup && <Model name={props.data.logical_field_name} isTooltip={true} data={props.data.details} handlebuttonClick={handlePopupBackButton} />}
+    </>
+  );
+};
+
+export default Toggle;
