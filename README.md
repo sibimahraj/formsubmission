@@ -614,3 +614,26 @@ updateTax(state, action) {
 
   state.fields = updatedFields;
 }
+
+
+useEffect(() => {
+  const countryFields = [
+    "country_of_tax_residence_1_a_1",
+    "country_of_tax_residence_2_a_1",
+    "country_of_tax_residence_3_a_1",
+    "country_of_tax_residence_4_a_1",
+  ];
+
+  countryFields.forEach((field) => {
+    const countryValue = userInputSelector.applicants[field];
+
+    if (countryValue) {
+      dispatch(taxAction.updateTax({ [field]: countryValue }));
+    }
+  });
+}, [
+  userInputSelector.applicants["country_of_tax_residence_1_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_2_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_3_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_4_a_1"],
+]);
