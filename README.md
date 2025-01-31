@@ -415,4 +415,223 @@ const Toggle = (props: KeyWithAnyModel) => {
 export default Toggle;
 
 
+
+import React, { useState, useEffect } from "react";
+import "./toggle.scss";
+import { useDispatch, useSelector } from "react-redux";
+import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
+import { isFieldUpdate } from "../../../utils/common/change.utils";
+import Alias from "../../components/alias/alias";
+import SelectionBox from "../selection-box/selection-box";
+import { aliasAction } from "../../../utils/store/alias-slice";
+import { taxAction } from "../../../utils/store/tax-slice";
+import Text from "../text/text";
+import { fieldErrorAction } from "../../../utils/store/field-error-slice";
+import { stagesAction } from "../../../utils/store/stages-slice";
+import { lastAction } from "../../../utils/store/last-accessed-slice";
+import Model from "../model/model";
+import "../information/information.scss";
+import Tax from "../../tax/tax";
+
+const Toggle = (props: KeyWithAnyModel) => {
+  const [defaultValue, setDefaultValue] = useState(false);
+  const [stageId, setStageId] = useState("");
+  const [showInfoPopup, setShowInfoPopup] = useState(false);
+  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+  const aliasSelector = useSelector((state: StoreModel) => state.alias);
+  const taxSelector = useSelector((state: StoreModel) => state.tax);
+  const userInputSelector = useSelector(
+    (state: StoreModel) => state.stages.userInput
+  );
+  const journeyType = useSelector(
+    (state: StoreModel) => state.stages.journeyType
+  );
+  const dispatch = useDispatch();
+
+  const handlePopupBackButton = () => {
+    setShowInfoPopup(false);
+  };
+
+  useEffect(() => {
+    if (
+      stageSelector &&
+      stageSelector[0] &&
+      stageSelector[0].stageInfo &&
+      stageSelector[0].stageInfo.applicants
+    ) {
+      if (
+        props.data.logical_field_name === "cheque_book_request" ||
+        props.data.logical_field_name === "other_name_or_alias"
+      ) {
+        const storeVal =
+          stageSelector[0].stageInfo.applicants[
+            props.data.logical_field_name + "_a_1"
+          ];
+
+        if (storeVal) {
+          dispatch(
+            isFieldUpdate(props, storeVal, props.data.logical_field_name)
+          );
+        }
+
+        setDefaultValue(storeVal === "Y");
+      }
+
+      if (
+        stageSelector &&
+        stageSelector.length > 0 &&
+        stageSelector[0].stageId
+      ) {
+        setStageId(stageSelector[0].stageId);
+      }
+    }
+  }, []);
+
+  const onToggle = () => {
+    dispatch(lastAction.getField(props.data.logical_field_name));
+
+    if (defaultValue) {
+      setDefaultValue(false);
+      dispatch(isFieldUpdate(props, "N", props.data.logical_field_name));
+
+      if (
+        props.data.logical_field_name === "other_name_or_alias" &&
+        aliasSelector.fields.length > 0
+      ) {
+        dispatch(fieldErrorAction.removeMandatoryFields(aliasSelector.fields));
+        dispatch(
+          stagesAction.removeAddToggleField({
+            removeFields: aliasSelector.fields,
+            newFields: [],
+          })
+        );
+        dispatch(aliasAction.resetAliasField([]));
+      }
+
+      if (props.data.logical_field_name === "tax_resident_of_other_country") {
+        dispatch(fieldErrorAction.removeMandatoryFields(taxSelector.fields));
+        dispatch(
+          stagesAction.removeAddToggleField({
+            removeFields: taxSelector.fields,
+            newFields: [],
+          })
+        );
+        dispatch(taxAction.resetTaxField([]));
+      }
+    } else {
+      setDefaultValue(true);
+      dispatch(isFieldUpdate(props, "Y", props.data.logical_field_name));
+
+      if (
+        props.data.logical_field_name === "other_name_or_alias" &&
+        aliasSelector.count < 1
+      ) {
+        dispatch(fieldErrorAction.getMandatoryFields(["alias_1"]));
+        dispatch(aliasAction.addAliasField("alias_1"));
+        dispatch(aliasAction.updateCount(1));
+      } else if (
+        props.data.logical_field_name === "tax_resident_of_other_country"
+      ) {
+        dispatch(
+          fieldErrorAction.getMandatoryFields(["no_of_tax_residency_country"])
+        );
+        dispatch(taxAction.addTaxFiled("no_of_tax_residency_country"));
+        dispatch(taxAction.updateCount(1));
+      }
+    }
+  };
+
+  useEffect(() => {
+    const taxCount =
+      userInputSelector.applicants["no_of_tax_residency_country_a_1"];
+
+    if (taxCount) {
+      const fieldsToAdd = [];
+      for (let i = 1; i <= Number(taxCount); i++) {
+        fieldsToAdd.push(`country_of_tax_residence_${i}`);
+      }
+
+      const currentFields = new Set(taxSelector.fields);
+      const fieldsToRemove = taxSelector.fields.filter(
+        (field) =>
+          field !== "no_of_tax_residency_country" &&
+          !fieldsToAdd.includes(field)
+      );
+
+      fieldsToRemove.forEach((field) => dispatch(taxAction.removeTaxField(field)));
+      fieldsToAdd.forEach((field) => {
+        if (!currentFields.has(field)) dispatch(taxAction.addTaxFiled(field));
+      });
+    }
+  }, [userInputSelector.applicants["no_of_tax_residency_country_a_1"]]);
+
+  useEffect(() => {
+    const taxFields = ["country_of_tax_residence_1_a_1", "country_of_tax_residence_2_a_1", "country_of_tax_residence_3_a_1", "country_of_tax_residence_4_a_1"];
+    
+    taxFields.forEach((field, index) => {
+      const value = userInputSelector.applicants[field];
+
+      if (value) {
+        dispatch(
+          taxAction.updateTax({
+            [`country_of_tax_residence_${index + 1}_a_1`]: value,
+          })
+        );
+      }
+    });
+  }, [
+    userInputSelector.applicants["country_of_tax_residence_1_a_1"],
+    userInputSelector.applicants["country_of_tax_residence_2_a_1"],
+    userInputSelector.applicants["country_of_tax_residence_3_a_1"],
+    userInputSelector.applicants["country_of_tax_residence_4_a_1"],
+  ]);
+
+  return (
+    <>
+      {!(stageId === "ssf-2" && journeyType) && (
+        <div className="toggle__content">
+          <div className="toggle__content__inner">
+            <div className="toggle__desc">{props.data.rwb_label_name}</div>
+            <div className="toggle__button__block">
+              <div className="toggle__button" onClick={onToggle}>
+                <input
+                  onChange={() => {}}
+                  type="checkbox"
+                  checked={defaultValue}
+                />
+                <span className="toggle__slider"></span>
+              </div>
+            </div>
+            <span className="radio__header">
+              {props.data.info_tooltips === "Yes" &&
+                props.data.logical_field_name !== "casa_fatca_declaration" && (
+                  <div className="tool-tip__icon">
+                    <span
+                      className="tool-tip"
+                      onClick={() => setShowInfoPopup(true)}
+                    ></span>
+                  </div>
+                )}
+            </span>
+          </div>
+        </div>
+      )}
+      {defaultValue &&
+        props.data.logical_field_name === "tax_resident_of_other_country" && (
+          <Tax {...props} />
+        )}
+      {showInfoPopup && (
+        <Model
+          name={props.data.logical_field_name}
+          isTooltip={true}
+          data={props.data.details}
+          handlebuttonClick={handlePopupBackButton}
+        />
+      )}
+    </>
+  );
+};
+
+export default Toggle;
+
       
