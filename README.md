@@ -637,3 +637,21 @@ useEffect(() => {
   userInputSelector.applicants["country_of_tax_residence_3_a_1"],
   userInputSelector.applicants["country_of_tax_residence_4_a_1"],
 ]);
+updateTax(state, action) {
+  const updatedFields = [...state.fields]; // Clone the existing state fields
+  const [field, value] = Object.entries(action.payload)[0]; // Extract the key-value pair
+
+  if (value) {
+    const index = updatedFields.findIndex(item => item === field);
+
+    if (index !== -1) {
+      // Remove existing tax fields for that country to avoid duplicates
+      updatedFields.splice(index + 1, 2);
+
+      // Insert tax fields immediately after the country field
+      updatedFields.splice(index + 1, 0, `tax_id_no_${field.split("_")[4]}`, `crs_reason_code_${field.split("_")[4]}`);
+    }
+  }
+
+  state.fields = updatedFields; // Update state fields
+}
