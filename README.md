@@ -739,3 +739,28 @@ const updateTax = (state, action) => {
     }
   });
 };
+
+updateTax: (state, action) => {
+  const normalizeFieldName = (field) => field.replace(/_a_\d+$/, "");
+  
+  Object.keys(action.payload).forEach((updatedField) => {
+    const normalizedUpdatedField = normalizeFieldName(updatedField);
+
+    // Find the index of the country field
+    const index = state.fields.findIndex(
+      (field) => normalizeFieldName(field) === normalizedUpdatedField
+    );
+
+    if (index !== -1) {
+      // Clear any extra tax fields between current and next country field
+      const taxFields = [`tax_id_no_a_${index + 1}`, `crs_reason_code_a_${index + 1}`];
+
+      // Ensure fields are not duplicated
+      taxFields.forEach((taxField, i) => {
+        if (!state.fields.includes(taxField)) {
+          state.fields.splice(index + 1 + i, 0, taxField);
+        }
+      });
+    }
+  });
+}
