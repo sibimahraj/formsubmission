@@ -511,3 +511,46 @@ useEffect(() => {
   userInputSelector.applicants["country_of_tax_residence_4_a_1"],
   dispatch,
 ]);
+
+useEffect(() => {
+  const countryFields = [
+    "country_of_tax_residence_1_a_1",
+    "country_of_tax_residence_2_a_1",
+    "country_of_tax_residence_3_a_1",
+    "country_of_tax_residence_4_a_1",
+  ];
+
+  // For each country field, check if the value exists
+  countryFields.forEach((field, index) => {
+    const countryValue = userInputSelector.applicants[field];
+    
+    // Field names for tax_id and reason under each respective country
+    const taxIdField = `tax_id_${index + 1}`;
+    const reasonField = `reason_${index + 1}`;
+
+    if (countryValue) {
+      // Check if tax_id and reason fields are not already added in the state for this country
+      const taxSelectorFields = taxSelector.fields;
+      if (!taxSelectorFields.includes(taxIdField)) {
+        dispatch(taxAction.addTaxFiled(taxIdField)); // Add tax_id field for the respective country
+      }
+      if (!taxSelectorFields.includes(reasonField)) {
+        dispatch(taxAction.addTaxFiled(reasonField)); // Add reason field for the respective country
+      }
+
+      // Update the country tax field in the store
+      dispatch(taxAction.updateTax({ [taxIdField]: "" }));
+      dispatch(taxAction.updateTax({ [reasonField]: "" }));
+    } else {
+      // If the country value is removed, remove the associated tax_id and reason fields
+      dispatch(taxAction.removeTaxField(taxIdField));
+      dispatch(taxAction.removeTaxField(reasonField));
+    }
+  });
+}, [
+  userInputSelector.applicants["country_of_tax_residence_1_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_2_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_3_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_4_a_1"],
+  dispatch,
+]);
