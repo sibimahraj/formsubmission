@@ -670,4 +670,44 @@ useEffect(() => {
   userInputSelector.applicants["country_of_tax_residence_4_a_1"]
 ]);
 
+useEffect(() => {
+  const updatedFields = [...taxSelector.fields];
+
+  ["1", "2", "3", "4"].forEach((index) => {
+    const countryKey = `country_of_tax_residence_${index}_a_1`;
+    const taxIdKey = `tax_id_no_${index}`;
+    const reasonKey = `crs_reason_code_${index}`;
+
+    const countryFieldIndex = updatedFields.indexOf(`country_of_tax_residence_${index}`);
+
+    if (userInputSelector.applicants[countryKey]) {
+      // Ensure the country field exists in the array
+      if (countryFieldIndex === -1) {
+        updatedFields.push(`country_of_tax_residence_${index}`);
+      }
+
+      // Ensure Tax ID and Reason appear **right after** their respective country field
+      if (!updatedFields.includes(taxIdKey) && countryFieldIndex !== -1) {
+        updatedFields.splice(countryFieldIndex + 1, 0, taxIdKey);
+      }
+      if (!updatedFields.includes(reasonKey) && countryFieldIndex !== -1) {
+        updatedFields.splice(countryFieldIndex + 2, 0, reasonKey);
+      }
+    } else {
+      // Remove dependent fields if the country is deselected
+      const taxIdIndex = updatedFields.indexOf(taxIdKey);
+      if (taxIdIndex !== -1) updatedFields.splice(taxIdIndex, 1);
+
+      const reasonIndex = updatedFields.indexOf(reasonKey);
+      if (reasonIndex !== -1) updatedFields.splice(reasonIndex, 1);
+    }
+  });
+
+  dispatch(taxAction.resetTaxField(updatedFields));
+}, [
+  userInputSelector.applicants["country_of_tax_residence_1_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_2_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_3_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_4_a_1"]
+]);
       
