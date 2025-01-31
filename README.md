@@ -655,3 +655,25 @@ updateTax(state, action) {
 
   state.fields = updatedFields; // Update state fields
 }
+
+
+useEffect(() => {
+  ["country_of_tax_residence_1", "country_of_tax_residence_2", "country_of_tax_residence_3", "country_of_tax_residence_4"].forEach((field) => {
+    const countryValue = taxDetails[field];
+
+    if (countryValue) {
+      const index = state.fields.indexOf(field);
+
+      if (index !== -1) {
+        // Ensure tax fields are pushed below the respective country field
+        state.fields.splice(index + 1, 2); // Remove existing tax fields if present
+        state.fields.splice(index + 1, 0, `tax_id_no_${field.split("_").pop()}`);
+        state.fields.splice(index + 2, 0, `crs_reason_code_${field.split("_").pop()}`);
+
+        dispatch(taxAction.updateTax({ [field]: countryValue }));
+      } else {
+        console.warn(`Field ${field} not found in state.fields`);
+      }
+    }
+  });
+}, [taxDetails]);
