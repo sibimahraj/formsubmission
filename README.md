@@ -304,7 +304,115 @@ export default Toggle;
 
 
                                 }
-                                
+
+
+                                import React, { useState, useEffect } from "react";
+import "./toggle.scss";
+import { useDispatch, useSelector } from "react-redux";
+import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
+import { isFieldUpdate } from "../../../utils/common/change.utils";
+import Alias from "../../components/alias/alias";
+import SelectionBox from "../selection-box/selection-box";
+import { aliasAction } from "../../../utils/store/alias-slice";
+import { taxAction } from "../../../utils/store/tax-slice";
+import { fieldErrorAction } from "../../../utils/store/field-error-slice";
+import { stagesAction } from "../../../utils/store/stages-slice";
+import { lastAction } from "../../../utils/store/last-accessed-slice";
+import Model from "../model/model";
+import "../information/information.scss";
+import Tax from "../../tax/tax";
+
+const Toggle = (props: KeyWithAnyModel) => {
+  const [defaultValue, setDefaultValue] = useState(false);
+  const [stageId, setStageId] = useState("");
+  const [showInfoPopup, setShowInfoPopup] = useState(false);
+
+  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+  const taxSelector = useSelector((state: StoreModel) => state.tax);
+  const userInputSelector = useSelector(
+    (state: StoreModel) => state.stages.userInput
+  );
+  
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (stageSelector?.[0]?.stageInfo?.applicants) {
+      if (stageSelector[0].stageId) {
+        setStageId(stageSelector[0].stageId);
+      }
+    }
+  }, []);
+
+  // Maintain correct order of fields dynamically
+  useEffect(() => {
+    const taxCount = userInputSelector.applicants["no_of_tax_residency_country_a_1"];
+    const existingFields = [...taxSelector.fields]; 
+
+    if (taxCount) {
+      const newFields = [];
+
+      for (let i = 1; i <= parseInt(taxCount); i++) {
+        newFields.push(`country_of_tax_residence_${i}`);
+      }
+
+      // Only add missing fields, don't remove existing ones incorrectly
+      newFields.forEach((field) => {
+        if (!existingFields.includes(field)) {
+          dispatch(taxAction.addTaxFiled(field));
+        }
+      });
+    }
+  }, [userInputSelector.applicants["no_of_tax_residency_country_a_1"]]);
+
+  useEffect(() => {
+    for (let i = 1; i <= 4; i++) {
+      const countryField = `country_of_tax_residence_${i}_a_1`;
+      if (userInputSelector.applicants[countryField]) {
+        dispatch(
+          taxAction.updateTax({
+            [countryField]: userInputSelector.applicants[countryField],
+          })
+        );
+      }
+    }
+  }, [
+    userInputSelector.applicants["country_of_tax_residence_1_a_1"],
+    userInputSelector.applicants["country_of_tax_residence_2_a_1"],
+    userInputSelector.applicants["country_of_tax_residence_3_a_1"],
+    userInputSelector.applicants["country_of_tax_residence_4_a_1"],
+  ]);
+
+  return (
+    <>
+      {!(stageId === "ssf-2") && (
+        <div className="toggle__content">
+          <div className="toggle__content__inner">
+            <div className="toggle__desc">{props.data.rwb_label_name}</div>
+            <div className="toggle__button__block">
+              <div className="toggle__button" onClick={() => {}}>
+                <input type="checkbox" checked={defaultValue} readOnly />
+                <span className="toggle__slider"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {defaultValue && props.data.logical_field_name === "tax_resident_of_other_country" && (
+        <Tax {...props} />
+      )}
+      {showInfoPopup && (
+        <Model
+          name={props.data.logical_field_name}
+          isTooltip={true}
+          data={props.data.details}
+          handlebuttonClick={() => setShowInfoPopup(false)}
+        />
+      )}
+    </>
+  );
+};
+
+export default Toggle;
 
 
       
