@@ -764,3 +764,26 @@ updateTax: (state, action) => {
     }
   });
 }
+
+
+updateTax(state, action) {
+  const updatedFields = [...state.fields]; // Clone the existing state fields
+  const [field, value] = Object.entries(action.payload)[0]; // Extract the key-value pair
+
+  // Normalize field name by removing any suffix (_a_1, etc.)
+  const normalizedField = field.replace(/_a_\d+$/, '');
+
+  const index = updatedFields.findIndex(
+    (item) => item.replace(/_a_\d+$/, '') === normalizedField
+  );
+
+  if (value && index !== -1) {
+    // Remove existing tax fields if present to avoid duplicates
+    updatedFields.splice(index + 1, 2);
+
+    // Insert tax fields immediately after the country field
+    updatedFields.splice(index + 1, 0, `tax_id_no_${field.split("_")[4]}`, `crs_reason_code_${field.split("_")[4]}`);
+  }
+
+  state.fields = updatedFields; // Update state fields
+}
