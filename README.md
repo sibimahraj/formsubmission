@@ -460,5 +460,27 @@ useEffect(() => {
   dispatch,
   taxSelector.fields,
 ]);
+useEffect(() => {
+  const countryFields = [
+    "country_of_tax_residence_1_a_1",
+    "country_of_tax_residence_2_a_1",
+    "country_of_tax_residence_3_a_1",
+    "country_of_tax_residence_4_a_1",
+  ];
 
+  countryFields.forEach((field, index) => {
+    if (userInputSelector.applicants[field]) {
+      dispatch(taxAction.addTaxFiled(`tax_id_${index + 1}`));
+      dispatch(taxAction.addTaxFiled(`reason_${index + 1}`));
+    } else {
+      dispatch(taxAction.removeTaxField(`tax_id_${index + 1}`));
+      dispatch(taxAction.removeTaxField(`reason_${index + 1}`));
+    }
+  });
+}, [
+  userInputSelector.applicants["country_of_tax_residence_1_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_2_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_3_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_4_a_1"],
+]);
                                 }
