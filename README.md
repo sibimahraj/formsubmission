@@ -677,3 +677,30 @@ useEffect(() => {
     }
   });
 }, [taxDetails]);
+
+
+const normalizeFieldName = (field) => field.replace(/_a_\d+$/, ''); // Remove "_a_1" suffix
+
+const updatedFields = Object.keys(action.payload);
+
+updatedFields.forEach((updatedField) => {
+  const normalizedUpdatedField = normalizeFieldName(updatedField);
+
+  // Find the index of the country field
+  const index = state.fields.findIndex(
+    (field) => normalizeFieldName(field) === normalizedUpdatedField
+  );
+
+  if (index !== -1) {
+    // Check if tax fields already exist
+    const nextFields = state.fields.slice(index + 1, index + 3);
+    const isTaxFieldsPresent =
+      nextFields.includes(`tax_id_no_${index + 1}`) &&
+      nextFields.includes(`crs_reason_code_${index + 1}`);
+
+    if (!isTaxFieldsPresent) {
+      // Insert tax fields only if they are missing
+      state.fields.splice(index + 1, 0, `tax_id_no_${index + 1}`, `crs_reason_code_${index + 1}`);
+    }
+  }
+});
