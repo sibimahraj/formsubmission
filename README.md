@@ -599,3 +599,18 @@ useEffect(() => {
   userInputSelector.applicants["country_of_tax_residence_4_a_1"],
   dispatch,
 ]);
+updateTax(state, action) {
+  const updatedFields = [...state.fields];
+  const [field, value] = Object.entries(action.payload)[0];
+
+  const index = updatedFields.findIndex((item) => item === field);
+
+  if (value && index !== -1) {
+    // Remove existing tax fields if present to avoid duplicates
+    updatedFields.splice(index + 1, 2);
+
+    updatedFields.splice(index + 1, 0, `tax_id_no_${field.split("_")[4]}`, `crs_reason_code_${field.split("_")[4]}`);
+  }
+
+  state.fields = updatedFields;
+}
