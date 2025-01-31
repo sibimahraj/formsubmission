@@ -554,3 +554,48 @@ useEffect(() => {
   userInputSelector.applicants["country_of_tax_residence_4_a_1"],
   dispatch,
 ]);
+
+useEffect(() => {
+  const countryFields = [
+    "country_of_tax_residence_1_a_1",
+    "country_of_tax_residence_2_a_1",
+    "country_of_tax_residence_3_a_1",
+    "country_of_tax_residence_4_a_1",
+  ];
+
+  // Loop through each country field and apply the logic
+  countryFields.forEach((field, index) => {
+    const countryValue = userInputSelector.applicants[field];
+
+    // If country field is selected, dispatch the corresponding updateTax action
+    if (countryValue) {
+      // Add tax_id and reason fields for each respective country field
+      const taxField = `country_of_tax_residence_${index + 1}_a_1`;
+      dispatch(taxAction.updateTax({ [taxField]: countryValue }));
+
+      // For each country, we need to update the tax_id and reason fields
+      const taxIdField = `tax_id_${index + 1}`;
+      const reasonField = `reason_${index + 1}`;
+
+      // Update the tax fields
+      dispatch(taxAction.updateTax({ [taxIdField]: "" }));
+      dispatch(taxAction.updateTax({ [reasonField]: "" }));
+    } else {
+      // If the country is removed, clear the respective fields
+      const taxField = `country_of_tax_residence_${index + 1}_a_1`;
+      dispatch(taxAction.updateTax({ [taxField]: "" }));
+
+      const taxIdField = `tax_id_${index + 1}`;
+      const reasonField = `reason_${index + 1}`;
+
+      dispatch(taxAction.updateTax({ [taxIdField]: "" }));
+      dispatch(taxAction.updateTax({ [reasonField]: "" }));
+    }
+  });
+}, [
+  userInputSelector.applicants["country_of_tax_residence_1_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_2_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_3_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_4_a_1"],
+  dispatch,
+]);
