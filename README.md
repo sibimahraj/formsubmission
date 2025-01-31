@@ -421,6 +421,44 @@ export default Toggle;
 };
 
 export default Toggle;
+useEffect(() => {
+  const taxCountryCount = parseInt(userInputSelector.applicants["no_of_tax_residency_country_a_1"] || "0");
 
+  if (taxCountryCount > 0) {
+    const existingFields = new Set(taxSelector.fields);
+
+    for (let i = 1; i <= taxCountryCount; i++) {
+      const countryField = `country_of_tax_residence_${i}`;
+      if (!existingFields.has(countryField)) {
+        dispatch(taxAction.addTaxFiled(countryField));
+      }
+    }
+  }
+}, [userInputSelector.applicants["no_of_tax_residency_country_a_1"], dispatch, taxSelector.fields]);
+
+useEffect(() => {
+  for (let i = 1; i <= 4; i++) {
+    const countryField = `country_of_tax_residence_${i}_a_1`;
+    const taxIdField = `tax_id_${i}`;
+    const reasonField = `reason_${i}`;
+
+    if (userInputSelector.applicants[countryField]) {
+      // Update Tax ID and Reason for the specific country
+      dispatch(taxAction.addTaxFiled(taxIdField));
+      dispatch(taxAction.addTaxFiled(reasonField));
+    } else {
+      // Remove unnecessary fields if country is deselected
+      dispatch(taxAction.removeTaxField(taxIdField));
+      dispatch(taxAction.removeTaxField(reasonField));
+    }
+  }
+}, [
+  userInputSelector.applicants["country_of_tax_residence_1_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_2_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_3_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_4_a_1"],
+  dispatch,
+  taxSelector.fields,
+]);
 
                                 }
