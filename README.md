@@ -634,4 +634,40 @@ const Toggle = (props: KeyWithAnyModel) => {
 
 export default Toggle;
 
+
+useEffect(() => {
+  const updatedFields = [...taxSelector.fields];
+
+  ["1", "2", "3", "4"].forEach((index) => {
+    const countryKey = `country_of_tax_residence_${index}_a_1`;
+    if (userInputSelector.applicants[countryKey]) {
+      const taxIdKey = `tax_id_no_${index}`;
+      const reasonKey = `crs_reason_code_${index}`;
+
+      const countryFieldIndex = updatedFields.indexOf(`country_of_tax_residence_${index}`);
+
+      if (countryFieldIndex !== -1) {
+        // Ensure Tax ID and Reason appear right after the respective country field
+        if (!updatedFields.includes(taxIdKey)) {
+          updatedFields.splice(countryFieldIndex + 1, 0, taxIdKey);
+        }
+        if (!updatedFields.includes(reasonKey)) {
+          updatedFields.splice(countryFieldIndex + 2, 0, reasonKey);
+        }
+      }
+    } else {
+      // Remove Tax ID and Reason if the country is deselected
+      updatedFields.splice(updatedFields.indexOf(`tax_id_no_${index}`), 1);
+      updatedFields.splice(updatedFields.indexOf(`crs_reason_code_${index}`), 1);
+    }
+  });
+
+  dispatch(taxAction.resetTaxField(updatedFields));
+}, [
+  userInputSelector.applicants["country_of_tax_residence_1_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_2_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_3_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_4_a_1"]
+]);
+
       
