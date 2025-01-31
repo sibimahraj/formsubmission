@@ -298,6 +298,126 @@ if(userInputSelector.applicants["no_of_tax_residency_country_a_1"]==="1"){
       )}
     </>
   );
+
+  import React, { useState, useEffect } from "react";
+import "./toggle.scss";
+import { useDispatch, useSelector } from "react-redux";
+import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
+import { isFieldUpdate } from "../../../utils/common/change.utils";
+import Alias from "../../components/alias/alias";
+import { aliasAction } from "../../../utils/store/alias-slice";
+import tax, { taxAction } from "../../../utils/store/tax-slice";
+import { fieldErrorAction } from "../../../utils/store/field-error-slice";
+import { stagesAction } from "../../../utils/store/stages-slice";
+import { lastAction } from "../../../utils/store/last-accessed-slice";
+import Model from "../model/model";
+import "../information/information.scss";
+import Tax from "../../tax/tax";
+
+const Toggle = (props: KeyWithAnyModel) => {
+  const [defaultValue, setDefaultValue] = useState(false);
+  const [stageId, setStageId] = useState("");
+  const [showInfoPopup, setShowInfoPopup] = useState(false);
+  
+  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+  const taxSelector = useSelector((state: StoreModel) => state.tax);
+  const userInputSelector = useSelector((state: StoreModel) => state.stages.userInput);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (
+      stageSelector &&
+      stageSelector.length > 0 &&
+      stageSelector[0].stageId
+    ) {
+      setStageId(stageSelector[0].stageId);
+    }
+  }, [stageSelector]);
+
+  const onToggle = () => {
+    dispatch(lastAction.getField(props.data.logical_field_name));
+    setDefaultValue((prev) => !prev);
+    if (defaultValue) {
+      dispatch(isFieldUpdate(props, "N", props.data.logical_field_name));
+    } else {
+      dispatch(isFieldUpdate(props, "Y", props.data.logical_field_name));
+    }
+  };
+
+  useEffect(() => {
+    const taxCountryCount = userInputSelector.applicants["no_of_tax_residency_country_a_1"];
+    const taxSelectorFields = taxSelector.fields;
+
+    if (taxCountryCount) {
+      const requiredFields = Array.from({ length: parseInt(taxCountryCount) }, (_, i) => `country_of_tax_residence_${i + 1}`);
+
+      // Remove extra fields
+      taxSelectorFields
+        .filter((field) => !requiredFields.includes(field) && field !== "no_of_tax_residency_country")
+        .forEach((field) => dispatch(taxAction.removeTaxField(field)));
+
+      // Add missing required fields
+      requiredFields.forEach((field) => {
+        if (!taxSelectorFields.includes(field)) {
+          dispatch(taxAction.addTaxFiled(field));
+        }
+      });
+    }
+  }, [userInputSelector.applicants["no_of_tax_residency_country_a_1"], dispatch, taxSelector.fields]);
+
+  useEffect(() => {
+    ["country_of_tax_residence_1_a_1", "country_of_tax_residence_2_a_1", "country_of_tax_residence_3_a_1", "country_of_tax_residence_4_a_1"].forEach((field, index) => {
+      if (userInputSelector.applicants[field]) {
+        const countryValue = userInputSelector.applicants[field];
+        dispatch(taxAction.updateTax({ [field]: countryValue }));
+      }
+    });
+  }, [userInputSelector.applicants, dispatch]);
+
+  return (
+    <>
+      {!(stageId === "ssf-2" && userInputSelector.journeyType) && (
+        <div className="toggle__content">
+          <div className="toggle__content__inner">
+            <div className="toggle__desc">{props.data.rwb_label_name}</div>
+            <div className="toggle__button__block">
+              <div className="toggle__button" onClick={onToggle}>
+                <input type="checkbox" checked={defaultValue} readOnly />
+                <span className="toggle__slider"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {defaultValue &&
+        props.data.logical_field_name === "other_name_or_alias" && (
+          <Alias
+            handleCallback={props.handleCallback}
+            handleFieldDispatch={props.handleFieldDispatch}
+            value={props.value}
+          />
+        )}
+      {defaultValue &&
+        props.data.logical_field_name === "tax_resident_of_other_country" && (
+          <Tax
+            handleCallback={props.handleCallback}
+            handleFieldDispatch={props.handleFieldDispatch}
+            props={props}
+          />
+        )}
+      {showInfoPopup && (
+        <Model
+          name={props.data.logical_field_name}
+          isTooltip={true}
+          data={props.data.details}
+          handlebuttonClick={() => setShowInfoPopup(false)}
+        />
+      )}
+    </>
+  );
+};
+
+export default Toggle;
 };
 
 export default Toggle;
