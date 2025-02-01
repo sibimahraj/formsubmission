@@ -908,3 +908,29 @@ useEffect(() => {
     }
   });
 }, [userInputSelector.applicants["no_of_tax_residency_country_a_1"]]);
+
+
+useEffect(() => {
+  const taxCountryCount = parseInt(userInputSelector.applicants["no_of_tax_residency_country_a_1"] || "0");
+  
+  if (taxCountryCount > 0) {
+    const existingFields = [...taxSelector.fields].filter(field => field.startsWith("country_of_tax_residence_"));
+
+    // Add missing fields (your logic remains untouched)
+    const existingFieldSet = new Set(existingFields);
+    for (let i = 1; i <= taxCountryCount; i++) {
+      const countryField = `country_of_tax_residence_${i}`;
+      if (!existingFieldSet.has(countryField)) {
+        dispatch(taxAction.addTaxFiled(countryField));
+      }
+    }
+
+    // Remove extra fields if user selects fewer countries
+    existingFields.forEach(field => {
+      const fieldIndex = parseInt(field.split("_").pop() || "0");
+      if (fieldIndex > taxCountryCount) {
+        dispatch(taxAction.removeTaxField(field));
+      }
+    });
+  }
+}, [userInputSelector.applicants["no_of_tax_residency_country_a_1"]]);
