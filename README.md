@@ -817,3 +817,19 @@ updateTax(state, action) {
 
   state.fields = updatedFields; // Update state fields
 }
+
+
+useEffect(() => {
+    const taxCountryCount = parseInt(userInputSelector.applicants["no_of_tax_residency_country_a_1"] || "0");
+  
+    if (taxCountryCount > 0) {
+      const existingFields = new Set(taxSelector.fields);
+  
+      for (let i = 1; i <= taxCountryCount; i++) {
+        const countryField = `country_of_tax_residence_${i}`;
+        if (!existingFields.has(countryField)) {
+          dispatch(taxAction.addTaxFiled(countryField));
+        }
+      }
+    }
+  }, [userInputSelector.applicants["no_of_tax_residency_country_a_1"]]);
