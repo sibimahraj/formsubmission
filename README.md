@@ -1200,3 +1200,56 @@ useEffect(() => {
     }
   }
 }, [userInputSelector.applicants["no_of_tax_residency_country_a_1"], taxSelector.fields]);
+
+useEffect(() => {
+  const taxCountryCount = parseInt(userInputSelector.applicants["no_of_tax_residency_country_a_1"] || "0");
+
+  if (taxCountryCount > 0) {
+    console.log("Adding fields logic triggered");
+
+    const existingFields = new Set(
+      taxSelector.fields.filter(field =>
+        field.startsWith("country_of_tax_residence_") ||
+        field.startsWith("tax_id_no_") ||
+        field.startsWith("crs_reason_code_")
+      )
+    );
+
+    for (let i = 1; i <= taxCountryCount; i++) {
+      const countryField = `country_of_tax_residence_${i}`;
+      if (!existingFields.has(countryField)) {
+        console.log(`Adding Field: ${countryField}`);
+        dispatch(taxAction.addTaxFiled(countryField));
+      }
+    }
+
+    // Wait for state update before removing
+    setTimeout(() => {
+      console.log("Checking for extra fields to remove...");
+      taxSelector.fields.forEach(field => {
+        const match = field.match(/_(\d+)$/);
+        const fieldIndex = match ? parseInt(match[1]) : 0;
+
+        if (fieldIndex > taxCountryCount) {
+          console.log(`Removing Field: ${field}`);
+          dispatch(taxAction.removeTaxField(field));
+        }
+      });
+    }, 100); // Small delay to ensure state updates first
+  } else {
+    console.log("Removing all tax fields after confirming state update");
+
+    setTimeout(() => {
+      taxSelector.fields.forEach(field => {
+        if (
+          field.startsWith("country_of_tax_residence_") ||
+          field.startsWith("tax_id_no_") ||
+          field.startsWith("reason_")
+        ) {
+          console.log(`Removing Field: ${field}`);
+          dispatch(taxAction.removeTaxField(field));
+        }
+      });
+    }, 100);
+  }
+}, [userInputSelector.applicants["no_of_tax_residency_country_a_1"], taxSelector.fields]);
