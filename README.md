@@ -1253,3 +1253,59 @@ useEffect(() => {
     }, 100);
   }
 }, [userInputSelector.applicants["no_of_tax_residency_country_a_1"], taxSelector.fields]);
+
+const [prevTaxCount, setPrevTaxCount] = useState(0);
+
+useEffect(() => {
+  const taxCountryCount = parseInt(userInputSelector.applicants["no_of_tax_residency_country_a_1"] || "0");
+
+  // If the count hasn't changed, do nothing (prevents multiple renders)
+  if (taxCountryCount === prevTaxCount) return;
+
+  setPrevTaxCount(taxCountryCount); // Update state only when value actually changes
+
+  if (taxCountryCount > 0) {
+    console.log("Adding fields logic triggered");
+
+    const existingFields = new Set(
+      taxSelector.fields.filter(field =>
+        field.startsWith("country_of_tax_residence_") ||
+        field.startsWith("tax_id_no_") ||
+        field.startsWith("crs_reason_code_")
+      )
+    );
+
+    for (let i = 1; i <= taxCountryCount; i++) {
+      const countryField = `country_of_tax_residence_${i}`;
+      if (!existingFields.has(countryField)) {
+        console.log(`Adding Field: ${countryField}`);
+        dispatch(taxAction.addTaxFiled(countryField));
+      }
+    }
+
+    // Remove extra fields (if any)
+    taxSelector.fields.forEach(field => {
+      const match = field.match(/_(\d+)$/);
+      const fieldIndex = match ? parseInt(match[1]) : 0;
+
+      if (fieldIndex > taxCountryCount) {
+        console.log(`Removing Field: ${field}`);
+        dispatch(taxAction.removeTaxField(field));
+      }
+    });
+
+  } else {
+    console.log("Removing all tax fields");
+
+    taxSelector.fields.forEach(field => {
+      if (
+        field.startsWith("country_of_tax_residence_") ||
+        field.startsWith("tax_id_no_") ||
+        field.startsWith("reason_")
+      ) {
+        console.log(`Removing Field: ${field}`);
+        dispatch(taxAction.removeTaxField(field));
+      }
+    });
+  }
+}, [userInputSelector.applicants["no_of_tax_residency_country_a_1"], taxSelector.fields]);
