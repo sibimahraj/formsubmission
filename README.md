@@ -1424,3 +1424,19 @@ useEffect(() => {
     }
   });
 }, [taxSelector.fields, userInputSelector.applicants]);
+
+useEffect(() => {
+  taxSelector.fields.forEach(field => {
+    if (field.startsWith("country_of_tax_residence_")) {
+      const fieldIndex = field.split("_").pop(); // Extract the dynamic index (1, 2, 3, etc.)
+      const taxValue = userInputSelector.applicants[`${field}_a_1`];
+
+      if (taxValue && taxValue.length === 9) {
+        const reasonField = `crs_reason_code_${fieldIndex}`; // Dynamically match the tax ID
+        if (taxSelector.fields.includes(reasonField)) {
+          dispatch(taxAction.removeTaxField(reasonField));
+        }
+      }
+    }
+  });
+}, [taxSelector.fields, userInputSelector.applicants]);
