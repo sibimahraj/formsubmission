@@ -1365,3 +1365,50 @@ useEffect(() => {
     });
   }
 }, [userInputSelector.applicants["no_of_tax_residency_country_a_1"], taxSelector.fields]);
+
+
+useEffect(() => {
+  const taxCountryCount = parseInt(userInputSelector.applicants["no_of_tax_residency_country_a_1"] || "0");
+
+  if (taxCountryCount > 0) {
+    const existingFields = [...taxSelector.fields].filter(field =>
+      field.startsWith("country_of_tax_residence_") || 
+      field.startsWith("tax_id_") || 
+      field.startsWith("reason_code_")
+    );
+
+    const fieldSet = new Set(existingFields);
+
+    // Add country fields
+    for (let i = 1; i <= taxCountryCount; i++) {
+      const countryField = `country_of_tax_residence_${i}`;
+      if (!fieldSet.has(countryField)) {
+        dispatch(taxAction.addTaxFiled(countryField));
+      }
+    }
+
+    // Remove and reassign fields beyond the count
+    for (let i = taxCountryCount + 1; i <= existingFields.length; i++) {
+      const countryField = `country_of_tax_residence_${i}`;
+      const taxField = `tax_id_${i}`;
+      const reasonField = `reason_code_${i}`;
+
+      // Remove fields from higher index
+      if (fieldSet.has(countryField)) {
+        dispatch(taxAction.removeTaxField(countryField));
+      }
+
+      // Move tax and reason code fields to the last valid country
+      if (fieldSet.has(taxField) || fieldSet.has(reasonField)) {
+        const targetCountryIndex = taxCountryCount;
+        dispatch(taxAction.removeTaxField(taxField));
+        dispatch(taxAction.removeTaxField(reasonField));
+
+        dispatch(taxAction.updateTax({
+          [`tax_id_${targetCountryIndex}`]: userInputSelector.applicants[`tax_id_${i}`] || '',
+          [`reason_code_${targetCountryIndex}`]: userInputSelector.applicants[`reason_code_${i}`] || ''
+        }));
+      }
+    }
+  }
+}, [userInputSelector.applicants["no_of_tax_residency_country_a_1"]]);
