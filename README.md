@@ -1412,3 +1412,15 @@ useEffect(() => {
     }
   }
 }, [userInputSelector.applicants["no_of_tax_residency_country_a_1"]]);
+
+useEffect(() => {
+  taxSelector.fields.forEach(field => {
+    if (field.startsWith("country_of_tax_residence_")) {
+      const taxValue = userInputSelector.applicants[`${field}_a_1`];
+
+      if (taxValue && taxValue.length === 9) {
+        dispatch(taxAction.removeTaxField(`${field}_reason`));
+      }
+    }
+  });
+}, [taxSelector.fields, userInputSelector.applicants]);
