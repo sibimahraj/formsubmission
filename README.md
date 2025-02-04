@@ -1466,3 +1466,34 @@ useEffect(() => {
   dispatch,
   taxSelector.fields,
 ]);
+
+useEffect(() => {
+  const countryFields = [
+    "country_of_tax_residence_1_a_1",
+    "country_of_tax_residence_2_a_1",
+    "country_of_tax_residence_3_a_1",
+    "country_of_tax_residence_4_a_1",
+  ];
+
+  countryFields.forEach((field) => {
+    const countryValue = userInputSelector.applicants[field];
+
+    // Dispatch only if the field has a value and the tax state doesn't already contain it
+    if (countryValue) {
+      const currentFieldValue = taxSelector.fields.find(
+        (item) => item.field === field && item.value === countryValue
+      );
+      
+      if (!currentFieldValue) {
+        dispatch(taxAction.updateTax({ [field]: countryValue }));
+      }
+    }
+  });
+}, [
+  userInputSelector.applicants["country_of_tax_residence_1_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_2_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_3_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_4_a_1"],
+  dispatch,
+  taxSelector.fields,
+]);
