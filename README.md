@@ -1497,3 +1497,33 @@ useEffect(() => {
   dispatch,
   taxSelector.fields,
 ]);
+
+
+updateTax(state, action) {
+  const updatedFields = [...state.fields]; // Clone the existing state fields
+  const [field, value] = Object.entries(action.payload)[0]; // Extract the key-value pair
+
+  // Normalize field name by removing any suffix (_a_1, etc.)
+  const normalizedField = field.replace(/_a_\d+$/, '');
+
+  // Check if the field already exists
+  const index = updatedFields.findIndex(
+    (item) => item.replace(/_a_\d+$/, '') === normalizedField
+  );
+
+  // Avoid re-adding tax and reason fields if already present
+  const taxField = `tax_id_no_${field.split("_")[4]}`;
+  const reasonField = `crs_reason_code_${field.split("_")[4]}`;
+
+  const alreadyExists = updatedFields.includes(taxField) && updatedFields.includes(reasonField);
+
+  if (value && index !== -1 && !alreadyExists) {
+    // Remove existing tax fields if present to avoid duplicates
+    updatedFields.splice(index + 1, 2);
+
+    // Insert tax fields immediately after the country field
+    updatedFields.splice(index + 1, 0, taxField, reasonField);
+  }
+
+  state.fields = updatedFields; // Update state fields
+}
