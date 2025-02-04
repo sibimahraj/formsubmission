@@ -1440,3 +1440,29 @@ useEffect(() => {
     }
   });
 }, [taxSelector.fields, userInputSelector.applicants]);
+
+
+useEffect(() => {
+  const countryFields = [
+    "country_of_tax_residence_1_a_1",
+    "country_of_tax_residence_2_a_1",
+    "country_of_tax_residence_3_a_1",
+    "country_of_tax_residence_4_a_1",
+  ];
+
+  countryFields.forEach((field) => {
+    const countryValue = userInputSelector.applicants[field];
+
+    // Dispatch only if the field has a new value and hasn't already added its related fields
+    if (countryValue && !taxSelector.fields.includes(field)) {
+      dispatch(taxAction.updateTax({ [field]: countryValue }));
+    }
+  });
+}, [
+  userInputSelector.applicants["country_of_tax_residence_1_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_2_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_3_a_1"],
+  userInputSelector.applicants["country_of_tax_residence_4_a_1"],
+  dispatch,
+  taxSelector.fields,
+]);
