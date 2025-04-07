@@ -64,3 +64,27 @@ export const getFields = (
     return newFileds;
   };
 };
+
+
+phoneSelector.fields.forEach((field: string) => {
+  // Check if this logical_field_name is already present in the fields array
+  const alreadyCloned = fields?.some(
+    (f) => f.logical_field_name === field
+  );
+
+  if (!alreadyCloned) {
+    const originalField = getClonedField("mobile_number_rwb"); // or use a mapping if needed
+    if (originalField) {
+      const clonedField = {
+        ...originalField,
+        logical_field_name: field,
+        component_type: "Phone",
+        rwb_label_name: "",
+        hide_remove_btn: !!journeyType,
+      };
+
+      newFileds.push(clonedField);
+      newFieldsArray.push(clonedField.logical_field_name);
+    }
+  }
+});
