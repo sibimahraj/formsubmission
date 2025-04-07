@@ -88,3 +88,67 @@ phoneSelector.fields.forEach((field: string) => {
     }
   }
 });
+phoneSelector.fields.forEach((field: string) => {
+      let phone = getClonedField(phoneSelector.fields[0]);
+      console.log("Phone", phone)
+      console.log("field", field)
+      if (field && phone) {
+        if(phoneSelector.fields[0] === "mobile_number_rwb"){
+          debugger;
+          phone.logical_field_name = "mobile_number";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "mobile_1"){
+          debugger;
+          phone.logical_field_name = "mobile_1_add";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }
+        else if(phoneSelector.fields[0] === "mobile_2"){
+          phone.logical_field_name = "mobile_2_add";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "overseas_mobile1_contact_no"){
+          phone.logical_field_name = "overseas_mobile1";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "overseas_mobile2_contact_no"){
+          phone.logical_field_name = "overseas_mobile2";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "ofc1_number"){
+          phone.logical_field_name = "ofc1";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "ofc2_number"){
+          phone.logical_field_name = "ofc2";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "home_phone2_number"){
+          phone.logical_field_name = "home_phone2";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "office_phone1_number"){
+          phone.logical_field_name = "office_phone1";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "office_phone2_number"){
+          phone.logical_field_name = "office_phone2";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "ohph1_number"){
+          phone.logical_field_name = "ohph1";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "ohph2_number"){
+          phone.logical_field_name = "ohph2";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }
+        if (journeyType) {
+          phone.hide_remove_btn = true;
+        }
+        newFileds.push(phone);
+        newFieldsArray.push(phone.logical_field_name);
+      }
+    });
