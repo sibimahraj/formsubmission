@@ -152,3 +152,41 @@ phoneSelector.fields.forEach((field: string) => {
         newFieldsArray.push(phone.logical_field_name);
       }
     });
+
+    const fieldMapping: Record<string, string> = {
+  mobile_number_rwb: "mobile_number",
+  mobile_1: "mobile_1_add",
+  mobile_2: "mobile_2_add",
+  overseas_mobile1_contact_no: "overseas_mobile1",
+  overseas_mobile2_contact_no: "overseas_mobile2",
+  ofc1_number: "ofc1",
+  ofc2_number: "ofc2",
+  home_phone2_number: "home_phone2",
+  office_phone1_number: "office_phone1",
+  office_phone2_number: "office_phone2",
+  ohph1_number: "ohph1",
+  ohph2_number: "ohph2"
+};
+
+phoneSelector.fields.forEach((field: string) => {
+  const newLogicalName = fieldMapping[field];
+  if (!newLogicalName) return; // skip if not in mapping
+
+  // Skip if already present
+  const alreadyCloned = fields?.some(
+    f => f.logical_field_name === newLogicalName
+  );
+  if (alreadyCloned) return;
+
+  const phone = getClonedField(field);
+  if (phone) {
+    phone.logical_field_name = newLogicalName;
+    phone.component_type = "Phone";
+    phone.rwb_label_name = "";
+    if (journeyType) {
+      phone.hide_remove_btn = true;
+    }
+    newFileds.push(phone);
+    newFieldsArray.push(phone.logical_field_name);
+  }
+});
