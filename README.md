@@ -50,3 +50,10 @@ useEffect(() => {
     }
   }
 }, []);
+
+currentFieldLovRes = lovSelector.lov
+  .filter((res: LovInputModel) => res.label === "purpose_of_account_rwb")
+  .map((original) => ({
+    label: "purpose_of_account_rwb_2",
+    value: original.value
+  }));
