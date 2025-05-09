@@ -1,3 +1,5 @@
+const [hideMap, setHideMap] = useState<{ [key: string]: boolean }>({});
+
 useEffect(() => {
   const updatedHideMap: { [key: string]: boolean } = {};
   const suffixes = [2, 3, 4, 5, 6, 7, 8];
@@ -17,3 +19,7 @@ useEffect(() => {
 
   setHideMap(updatedHideMap);
 }, [userInputSelector.applicants]);
+
+{hideMap[props.data.logical_field_name] && (
+  <div>... your field JSX ...</div>
+)}
