@@ -43,3 +43,37 @@ useEffect(() => {
 
   setHideMap(updatedHideMap);
 }, [userInputSelector.applicants]);
+
+const [visibility, setVisibility] = useState<{ [key: string]: boolean }>({});
+
+const extractSuffix = (fieldName: string): string | null => {
+  const match = fieldName.match(/issuance_type_(\d+)/);
+  return match ? match[1] : null;
+};
+useEffect(() => {
+  const logicalFieldName = props.data.logical_field_name;
+
+  const suffix = extractSuffix(logicalFieldName); // get "2" from "issuance_type_2"
+  if (!suffix) return;
+
+  const rwbFieldKey = `debit_card_request_rwb_${suffix}_a_1`;
+
+  const rwbValue = userInputSelector.applicants?.[rwbFieldKey];
+
+  let show = true;
+
+  if (rwbValue === "N") {
+    show = true;
+  } else if (rwbValue === "Y") {
+    show = false;
+  } else {
+    show = true; // default fallback
+  }
+
+  setVisibility(prev => ({
+    ...prev,
+    [logicalFieldName]: show
+  }));
+}, [userInputSelector.applicants, props.data.logical_field_name]);
+
+
